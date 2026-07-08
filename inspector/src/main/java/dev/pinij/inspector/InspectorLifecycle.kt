@@ -12,6 +12,8 @@ object InspectorLifecycle : Application.ActivityLifecycleCallbacks {
 
     override fun onActivityResumed(activity: Activity) {
         attachOverlay(activity)
+        // Re-post each resume: no-op if already shown; covers permission granted after init.
+        NotificationTrigger.show(activity)
         val detector = ShakeDetector { InspectorController.toggle() }
         detectors[activity] = detector
         detector.start(activity)
