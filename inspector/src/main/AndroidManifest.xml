@@ -13,5 +13,13 @@
                 android:name="dev.pinij.inspector.InspectorInitializer"
                 android:value="androidx.startup" />
         </provider>
+
+        <receiver
+            android:name="dev.pinij.inspector.ToggleReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="dev.pinij.inspector.ACTION_TOGGLE" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

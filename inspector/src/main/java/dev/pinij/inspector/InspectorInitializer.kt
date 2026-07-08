@@ -8,7 +8,7 @@ class InspectorInitializer : Initializer<Unit> {
     override fun create(context: Context) {
         val app = context.applicationContext as Application
         app.registerActivityLifecycleCallbacks(InspectorLifecycle)
-        // NotificationTrigger.show(context) — enabled in Task 9
+        NotificationTrigger.show(context)
     }
 
     override fun dependencies(): List<Class<out Initializer<*>>> = emptyList()
