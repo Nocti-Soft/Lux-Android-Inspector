@@ -35,7 +35,9 @@ class InspectorOverlay(context: Context) : FrameLayout(context) {
         setWillNotDraw(true)
         addView(canvas, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         addView(toolbar, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT,
-            Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { bottomMargin = 48 })
+            Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply {
+            bottomMargin = (16 * resources.displayMetrics.density).toInt()
+        })
         sync()
     }
 

@@ -14,6 +14,7 @@ object InspectorLifecycle : Application.ActivityLifecycleCallbacks {
         attachOverlay(activity)
         // Re-post each resume: no-op if already shown; covers permission granted after init.
         NotificationTrigger.show(activity)
+        detectors.remove(activity)?.stop(activity) // defensive: never stack registrations
         val detector = ShakeDetector { InspectorController.toggle() }
         detectors[activity] = detector
         detector.start(activity)
@@ -37,5 +38,7 @@ object InspectorLifecycle : Application.ActivityLifecycleCallbacks {
     override fun onActivityStarted(activity: Activity) = Unit
     override fun onActivityStopped(activity: Activity) = Unit
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
-    override fun onActivityDestroyed(activity: Activity) = Unit
+    override fun onActivityDestroyed(activity: Activity) {
+        detectors.remove(activity)?.stop(activity)
+    }
 }
