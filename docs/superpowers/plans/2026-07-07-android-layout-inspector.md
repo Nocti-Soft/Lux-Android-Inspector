@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Package: `dev.pinij.inspector` (library), `dev.pinij.inspector.sample` (sample).
+- Package: `com.noctisoft.layoutmeasurement` (library), `com.noctisoft.layoutmeasurement.sample` (sample).
 - All coordinates are **window** coordinates (not screen). View path: `getLocationInWindow`; Compose path: `boundsInWindow`. Overlay is a decorView child at (0,0), so its touch/draw coords equal window coords.
 - Labels display `"${dp}dp (${px}px)"`, dp rounded to 1 decimal.
 - No runtime permission required except `POST_NOTIFICATIONS` (notification trigger degrades silently if not granted).
@@ -31,13 +31,13 @@
 - Create: `inspector/src/main/AndroidManifest.xml`
 - Create: `sample/build.gradle.kts`
 - Create: `sample/src/main/AndroidManifest.xml`
-- Create: `sample/src/main/java/dev/pinij/inspector/sample/MainActivity.kt`
+- Create: `sample/src/main/java/com/noctisoft/layoutmeasurement/sample/MainActivity.kt`
 - Create: `sample/src/main/res/layout/activity_main.xml`
 - Create: `sample/src/main/res/values/themes.xml`
 
 **Interfaces:**
 - Consumes: nothing (first task).
-- Produces: buildable `:inspector` (Android library) and `:sample` (app, `debugImplementation project(":inspector")`). Later tasks add files under `inspector/src/main/java/dev/pinij/inspector/` and tests under `inspector/src/test/java/dev/pinij/inspector/`.
+- Produces: buildable `:inspector` (Android library) and `:sample` (app, `debugImplementation project(":inspector")`). Later tasks add files under `inspector/src/main/java/com/noctisoft/layoutmeasurement/` and tests under `inspector/src/test/java/com/noctisoft/layoutmeasurement/`.
 
 - [ ] **Step 1: Generate Gradle wrapper**
 
@@ -120,7 +120,7 @@ plugins {
 }
 
 android {
-    namespace = "dev.pinij.inspector"
+    namespace = "com.noctisoft.layoutmeasurement"
     compileSdk = 35
     defaultConfig { minSdk = 24 }
     compileOptions {
@@ -159,10 +159,10 @@ plugins {
 }
 
 android {
-    namespace = "dev.pinij.inspector.sample"
+    namespace = "com.noctisoft.layoutmeasurement.sample"
     compileSdk = 35
     defaultConfig {
-        applicationId = "dev.pinij.inspector.sample"
+        applicationId = "com.noctisoft.layoutmeasurement"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
@@ -228,9 +228,9 @@ dependencies {
 </LinearLayout>
 ```
 
-`sample/src/main/java/dev/pinij/inspector/sample/MainActivity.kt`:
+`sample/src/main/java/com/noctisoft/layoutmeasurement/sample/MainActivity.kt`:
 ```kotlin
-package dev.pinij.inspector.sample
+package com.noctisoft.layoutmeasurement.sample
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -260,8 +260,8 @@ git commit -m "chore: scaffold Gradle project with :inspector library and :sampl
 ### Task 2: Pure geometry — `Bounds`, gaps, px↔dp, hit-pick (TDD)
 
 **Files:**
-- Create: `inspector/src/main/java/dev/pinij/inspector/Geometry.kt`
-- Test: `inspector/src/test/java/dev/pinij/inspector/GeometryTest.kt`
+- Create: `inspector/src/main/java/com/noctisoft/layoutmeasurement/Geometry.kt`
+- Test: `inspector/src/test/java/com/noctisoft/layoutmeasurement/GeometryTest.kt`
 
 **Interfaces:**
 - Consumes: nothing.
@@ -278,9 +278,9 @@ git commit -m "chore: scaffold Gradle project with :inspector library and :sampl
 
 - [ ] **Step 1: Write the failing tests**
 
-`inspector/src/test/java/dev/pinij/inspector/GeometryTest.kt`:
+`inspector/src/test/java/com/noctisoft/layoutmeasurement/GeometryTest.kt`:
 ```kotlin
-package dev.pinij.inspector
+package com.noctisoft.layoutmeasurement
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -353,14 +353,14 @@ class GeometryTest {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `./gradlew :inspector:testDebugUnitTest --tests "dev.pinij.inspector.GeometryTest"`
+Run: `./gradlew :inspector:testDebugUnitTest --tests "com.noctisoft.layoutmeasurement.GeometryTest"`
 Expected: FAIL — unresolved references `Bounds`, `CapturedNode`, `Geometry`.
 
 - [ ] **Step 3: Write implementation**
 
-`inspector/src/main/java/dev/pinij/inspector/Geometry.kt`:
+`inspector/src/main/java/com/noctisoft/layoutmeasurement/Geometry.kt`:
 ```kotlin
-package dev.pinij.inspector
+package com.noctisoft.layoutmeasurement
 
 import kotlin.math.max
 import kotlin.math.min
@@ -397,7 +397,7 @@ object Geometry {
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `./gradlew :inspector:testDebugUnitTest --tests "dev.pinij.inspector.GeometryTest"`
+Run: `./gradlew :inspector:testDebugUnitTest --tests "com.noctisoft.layoutmeasurement.GeometryTest"`
 Expected: PASS, 10 tests.
 
 - [ ] **Step 5: Commit**
@@ -412,8 +412,8 @@ git commit -m "feat: add Bounds, CapturedNode and pure geometry functions with t
 ### Task 3: `InspectorController` — activation + mode state (TDD)
 
 **Files:**
-- Create: `inspector/src/main/java/dev/pinij/inspector/InspectorController.kt`
-- Test: `inspector/src/test/java/dev/pinij/inspector/InspectorControllerTest.kt`
+- Create: `inspector/src/main/java/com/noctisoft/layoutmeasurement/InspectorController.kt`
+- Test: `inspector/src/test/java/com/noctisoft/layoutmeasurement/InspectorControllerTest.kt`
 
 **Interfaces:**
 - Consumes: nothing.
@@ -427,9 +427,9 @@ git commit -m "feat: add Bounds, CapturedNode and pure geometry functions with t
 
 - [ ] **Step 1: Write the failing tests**
 
-`inspector/src/test/java/dev/pinij/inspector/InspectorControllerTest.kt`:
+`inspector/src/test/java/com/noctisoft/layoutmeasurement/InspectorControllerTest.kt`:
 ```kotlin
-package dev.pinij.inspector
+package com.noctisoft.layoutmeasurement
 
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -475,14 +475,14 @@ class InspectorControllerTest {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `./gradlew :inspector:testDebugUnitTest --tests "dev.pinij.inspector.InspectorControllerTest"`
+Run: `./gradlew :inspector:testDebugUnitTest --tests "com.noctisoft.layoutmeasurement.InspectorControllerTest"`
 Expected: FAIL — unresolved references.
 
 - [ ] **Step 3: Write implementation**
 
-`inspector/src/main/java/dev/pinij/inspector/InspectorController.kt`:
+`inspector/src/main/java/com/noctisoft/layoutmeasurement/InspectorController.kt`:
 ```kotlin
-package dev.pinij.inspector
+package com.noctisoft.layoutmeasurement
 
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -516,7 +516,7 @@ object InspectorController {
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `./gradlew :inspector:testDebugUnitTest --tests "dev.pinij.inspector.InspectorControllerTest"`
+Run: `./gradlew :inspector:testDebugUnitTest --tests "com.noctisoft.layoutmeasurement.InspectorControllerTest"`
 Expected: PASS, 3 tests.
 
 - [ ] **Step 5: Commit**
@@ -533,21 +533,21 @@ git commit -m "feat: add InspectorController activation and mode state"
 Runtime capture needs a live window — no JVM test. Logic kept thin; the testable selection math already lives in `Geometry.pickAt`.
 
 **Files:**
-- Create: `inspector/src/main/java/dev/pinij/inspector/ViewCapture.kt`
-- Create: `inspector/src/main/java/dev/pinij/inspector/ComposeCapture.kt`
+- Create: `inspector/src/main/java/com/noctisoft/layoutmeasurement/ViewCapture.kt`
+- Create: `inspector/src/main/java/com/noctisoft/layoutmeasurement/ComposeCapture.kt`
 
 **Interfaces:**
 - Consumes: `Bounds`, `CapturedNode`, `Source` (Task 2).
 - Produces:
   - `object ViewCapture { fun captureAll(root: View): List<CapturedNode> }` — every visible view in window coords, Compose islands included; skips the inspector's own overlay (any view whose tag == `InspectorOverlay.TAG`).
   - `object ComposeCapture { fun capture(view: View): List<CapturedNode> }` — tagged semantics nodes of one Compose root; empty list if `view` is not a Compose root or has no tagged nodes. ALL Compose imports live in this file only.
-  - `const val TAG = "dev.pinij.inspector.OVERLAY"` on `InspectorOverlay` companion — defined in Task 5; until then `ViewCapture` uses the string literal via its own private const `OVERLAY_TAG` with the same value.
+  - `const val TAG = "com.noctisoft.layoutmeasurement.OVERLAY"` on `InspectorOverlay` companion — defined in Task 5; until then `ViewCapture` uses the string literal via its own private const `OVERLAY_TAG` with the same value.
 
 - [ ] **Step 1: Write `ComposeCapture`**
 
-`inspector/src/main/java/dev/pinij/inspector/ComposeCapture.kt`:
+`inspector/src/main/java/com/noctisoft/layoutmeasurement/ComposeCapture.kt`:
 ```kotlin
-package dev.pinij.inspector
+package com.noctisoft.layoutmeasurement
 
 import android.view.View
 import androidx.compose.ui.node.RootForTest
@@ -593,16 +593,16 @@ object ComposeCapture {
 
 - [ ] **Step 2: Write `ViewCapture`**
 
-`inspector/src/main/java/dev/pinij/inspector/ViewCapture.kt`:
+`inspector/src/main/java/com/noctisoft/layoutmeasurement/ViewCapture.kt`:
 ```kotlin
-package dev.pinij.inspector
+package com.noctisoft.layoutmeasurement
 
 import android.view.View
 import android.view.ViewGroup
 
 object ViewCapture {
 
-    private const val OVERLAY_TAG = "dev.pinij.inspector.OVERLAY"
+    private const val OVERLAY_TAG = "com.noctisoft.layoutmeasurement.OVERLAY"
 
     /** All visible widgets under [root], in window coordinates. */
     fun captureAll(root: View): List<CapturedNode> {
@@ -667,19 +667,19 @@ git commit -m "feat: add View-tree and Compose-semantics capture"
 ### Task 5: `InspectorOverlay` — toolbar, touch, measurement rendering
 
 **Files:**
-- Create: `inspector/src/main/java/dev/pinij/inspector/InspectorOverlay.kt`
+- Create: `inspector/src/main/java/com/noctisoft/layoutmeasurement/InspectorOverlay.kt`
 
 **Interfaces:**
 - Consumes: `InspectorController`, `MeasureMode` (Task 3); `ViewCapture.captureAll` (Task 4); `Geometry`, `Bounds`, `CapturedNode` (Task 2).
 - Produces:
-  - `class InspectorOverlay(context: Context) : FrameLayout` with `companion object { const val TAG = "dev.pinij.inspector.OVERLAY" }`. Sets `tag = TAG` on itself. Task 7 attaches it via `decorView.addView(InspectorOverlay(activity))`.
+  - `class InspectorOverlay(context: Context) : FrameLayout` with `companion object { const val TAG = "com.noctisoft.layoutmeasurement.OVERLAY" }`. Sets `tag = TAG` on itself. Task 7 attaches it via `decorView.addView(InspectorOverlay(activity))`.
   - Registers/unregisters its controller listener in `onAttachedToWindow`/`onDetachedFromWindow` — Task 7 needs no wiring beyond addView/removeView.
 
 - [ ] **Step 1: Write the overlay**
 
-`inspector/src/main/java/dev/pinij/inspector/InspectorOverlay.kt`:
+`inspector/src/main/java/com/noctisoft/layoutmeasurement/InspectorOverlay.kt`:
 ```kotlin
-package dev.pinij.inspector
+package com.noctisoft.layoutmeasurement
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -704,7 +704,7 @@ import kotlin.math.roundToInt
 class InspectorOverlay(context: Context) : FrameLayout(context) {
 
     companion object {
-        const val TAG = "dev.pinij.inspector.OVERLAY"
+        const val TAG = "com.noctisoft.layoutmeasurement.OVERLAY"
     }
 
     private val canvas = MeasureCanvas(context)
@@ -925,7 +925,7 @@ git commit -m "feat: add InspectorOverlay with toolbar and four measure modes"
 ### Task 6: `ShakeDetector`
 
 **Files:**
-- Create: `inspector/src/main/java/dev/pinij/inspector/ShakeDetector.kt`
+- Create: `inspector/src/main/java/com/noctisoft/layoutmeasurement/ShakeDetector.kt`
 
 **Interfaces:**
 - Consumes: nothing from earlier tasks (callback injected).
@@ -933,9 +933,9 @@ git commit -m "feat: add InspectorOverlay with toolbar and four measure modes"
 
 - [ ] **Step 1: Write the detector**
 
-`inspector/src/main/java/dev/pinij/inspector/ShakeDetector.kt`:
+`inspector/src/main/java/com/noctisoft/layoutmeasurement/ShakeDetector.kt`:
 ```kotlin
-package dev.pinij.inspector
+package com.noctisoft.layoutmeasurement
 
 import android.content.Context
 import android.hardware.Sensor
@@ -994,8 +994,8 @@ git commit -m "feat: add accelerometer shake detector"
 ### Task 7: Auto-init — `InspectorInitializer` + lifecycle attach/detach
 
 **Files:**
-- Create: `inspector/src/main/java/dev/pinij/inspector/InspectorInitializer.kt`
-- Create: `inspector/src/main/java/dev/pinij/inspector/InspectorLifecycle.kt`
+- Create: `inspector/src/main/java/com/noctisoft/layoutmeasurement/InspectorInitializer.kt`
+- Create: `inspector/src/main/java/com/noctisoft/layoutmeasurement/InspectorLifecycle.kt`
 - Modify: `inspector/src/main/AndroidManifest.xml`
 
 **Interfaces:**
@@ -1004,9 +1004,9 @@ git commit -m "feat: add accelerometer shake detector"
 
 - [ ] **Step 1: Write lifecycle callbacks**
 
-`inspector/src/main/java/dev/pinij/inspector/InspectorLifecycle.kt`:
+`inspector/src/main/java/com/noctisoft/layoutmeasurement/InspectorLifecycle.kt`:
 ```kotlin
-package dev.pinij.inspector
+package com.noctisoft.layoutmeasurement
 
 import android.app.Activity
 import android.app.Application
@@ -1049,9 +1049,9 @@ object InspectorLifecycle : Application.ActivityLifecycleCallbacks {
 
 - [ ] **Step 2: Write the App Startup initializer**
 
-`inspector/src/main/java/dev/pinij/inspector/InspectorInitializer.kt`:
+`inspector/src/main/java/com/noctisoft/layoutmeasurement/InspectorInitializer.kt`:
 ```kotlin
-package dev.pinij.inspector
+package com.noctisoft.layoutmeasurement
 
 import android.app.Application
 import android.content.Context
@@ -1084,7 +1084,7 @@ Replace `inspector/src/main/AndroidManifest.xml` with:
             android:exported="false"
             tools:node="merge">
             <meta-data
-                android:name="dev.pinij.inspector.InspectorInitializer"
+                android:name="com.noctisoft.layoutmeasurement.InspectorInitializer"
                 android:value="androidx.startup" />
         </provider>
     </application>
@@ -1112,9 +1112,9 @@ Built before the notification trigger so manual testing of Task 9 has real scree
 
 **Files:**
 - Modify: `sample/src/main/res/layout/activity_main.xml`
-- Modify: `sample/src/main/java/dev/pinij/inspector/sample/MainActivity.kt`
-- Create: `sample/src/main/java/dev/pinij/inspector/sample/ComposeActivity.kt`
-- Create: `sample/src/main/java/dev/pinij/inspector/sample/MixedActivity.kt`
+- Modify: `sample/src/main/java/com/noctisoft/layoutmeasurement/sample/MainActivity.kt`
+- Create: `sample/src/main/java/com/noctisoft/layoutmeasurement/sample/ComposeActivity.kt`
+- Create: `sample/src/main/java/com/noctisoft/layoutmeasurement/sample/MixedActivity.kt`
 - Create: `sample/src/main/res/layout/activity_mixed.xml`
 - Modify: `sample/src/main/AndroidManifest.xml`
 
@@ -1178,9 +1178,9 @@ Replace `sample/src/main/res/layout/activity_main.xml`:
 
 - [ ] **Step 2: Wire navigation + notification permission request**
 
-Replace `sample/src/main/java/dev/pinij/inspector/sample/MainActivity.kt`:
+Replace `sample/src/main/java/com/noctisoft/layoutmeasurement/sample/MainActivity.kt`:
 ```kotlin
-package dev.pinij.inspector.sample
+package com.noctisoft.layoutmeasurement.sample
 
 import android.Manifest
 import android.content.Intent
@@ -1211,9 +1211,9 @@ class MainActivity : AppCompatActivity() {
 
 - [ ] **Step 3: Compose screen — tagged and untagged nodes**
 
-`sample/src/main/java/dev/pinij/inspector/sample/ComposeActivity.kt`:
+`sample/src/main/java/com/noctisoft/layoutmeasurement/sample/ComposeActivity.kt`:
 ```kotlin
-package dev.pinij.inspector.sample
+package com.noctisoft.layoutmeasurement.sample
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -1285,9 +1285,9 @@ fun ComposeScreen() {
 </LinearLayout>
 ```
 
-`sample/src/main/java/dev/pinij/inspector/sample/MixedActivity.kt`:
+`sample/src/main/java/com/noctisoft/layoutmeasurement/sample/MixedActivity.kt`:
 ```kotlin
-package dev.pinij.inspector.sample
+package com.noctisoft.layoutmeasurement.sample
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -1341,8 +1341,8 @@ git commit -m "feat: add XML, Compose and mixed sample screens"
 ### Task 9: `NotificationTrigger` — ongoing notification toggle
 
 **Files:**
-- Create: `inspector/src/main/java/dev/pinij/inspector/NotificationTrigger.kt`
-- Modify: `inspector/src/main/java/dev/pinij/inspector/InspectorInitializer.kt`
+- Create: `inspector/src/main/java/com/noctisoft/layoutmeasurement/NotificationTrigger.kt`
+- Modify: `inspector/src/main/java/com/noctisoft/layoutmeasurement/InspectorInitializer.kt`
 - Modify: `inspector/src/main/AndroidManifest.xml`
 
 **Interfaces:**
@@ -1351,9 +1351,9 @@ git commit -m "feat: add XML, Compose and mixed sample screens"
 
 - [ ] **Step 1: Write the trigger**
 
-`inspector/src/main/java/dev/pinij/inspector/NotificationTrigger.kt`:
+`inspector/src/main/java/com/noctisoft/layoutmeasurement/NotificationTrigger.kt`:
 ```kotlin
-package dev.pinij.inspector
+package com.noctisoft.layoutmeasurement
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -1369,7 +1369,7 @@ object NotificationTrigger {
 
     private const val CHANNEL_ID = "layout_inspector"
     private const val NOTIFICATION_ID = 0x1A1
-    const val ACTION_TOGGLE = "dev.pinij.inspector.ACTION_TOGGLE"
+    const val ACTION_TOGGLE = "com.noctisoft.layoutmeasurement.ACTION_TOGGLE"
 
     fun show(context: Context) {
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -1410,10 +1410,10 @@ class ToggleReceiver : BroadcastReceiver() {
 In `inspector/src/main/AndroidManifest.xml`, inside `<application>`:
 ```xml
 <receiver
-    android:name="dev.pinij.inspector.ToggleReceiver"
+    android:name="com.noctisoft.layoutmeasurement.ToggleReceiver"
     android:exported="false">
     <intent-filter>
-        <action android:name="dev.pinij.inspector.ACTION_TOGGLE" />
+        <action android:name="com.noctisoft.layoutmeasurement.ACTION_TOGGLE" />
     </intent-filter>
 </receiver>
 ```
