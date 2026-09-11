@@ -5,10 +5,10 @@ plugins {
 }
 
 android {
-    namespace = "dev.pinij.inspector.sample"
+    namespace = "com.noctisoft.layoutmeasurement.sample"
     compileSdk = 35
     defaultConfig {
-        applicationId = "dev.pinij.inspector.sample"
+        applicationId = "com.noctisoft.layoutmeasurement"
         minSdk = 24
         targetSdk = 35
         versionCode = 1

@@ -1,11 +1,11 @@
-package dev.pinij.inspector
+package com.noctisoft.layoutmeasurement
 
 import android.view.View
 import android.view.ViewGroup
 
 object ViewCapture {
 
-    private const val OVERLAY_TAG = "dev.pinij.inspector.OVERLAY"
+    private const val OVERLAY_TAG = "com.noctisoft.layoutmeasurement.OVERLAY"
 
     /** All visible widgets under [root], in window coordinates. */
     fun captureAll(root: View): List<CapturedNode> {

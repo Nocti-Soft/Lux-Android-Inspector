@@ -10,15 +10,15 @@
             android:exported="false"
             tools:node="merge">
             <meta-data
-                android:name="dev.pinij.inspector.InspectorInitializer"
+                android:name="com.noctisoft.layoutmeasurement.InspectorInitializer"
                 android:value="androidx.startup" />
         </provider>
 
         <receiver
-            android:name="dev.pinij.inspector.ToggleReceiver"
+            android:name="com.noctisoft.layoutmeasurement.ToggleReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="dev.pinij.inspector.ACTION_TOGGLE" />
+                <action android:name="com.noctisoft.layoutmeasurement.ACTION_TOGGLE" />
             </intent-filter>
         </receiver>
     </application>

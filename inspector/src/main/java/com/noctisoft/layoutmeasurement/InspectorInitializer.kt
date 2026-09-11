@@ -1,4 +1,4 @@
-package dev.pinij.inspector
+package com.noctisoft.layoutmeasurement
 
 import android.app.Application
 import android.content.Context

@@ -1,4 +1,4 @@
-package dev.pinij.inspector.sample
+package com.noctisoft.layoutmeasurement.sample
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

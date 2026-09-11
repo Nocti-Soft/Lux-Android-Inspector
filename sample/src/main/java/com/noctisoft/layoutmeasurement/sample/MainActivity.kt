@@ -1,4 +1,4 @@
-package dev.pinij.inspector.sample
+package com.noctisoft.layoutmeasurement.sample
 
 import android.Manifest
 import android.content.Intent

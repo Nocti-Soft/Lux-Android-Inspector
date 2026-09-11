@@ -1,4 +1,4 @@
-package dev.pinij.inspector
+package com.noctisoft.layoutmeasurement
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -23,7 +23,7 @@ import kotlin.math.roundToInt
 class InspectorOverlay(context: Context) : FrameLayout(context) {
 
     companion object {
-        const val TAG = "dev.pinij.inspector.OVERLAY"
+        const val TAG = "com.noctisoft.layoutmeasurement.OVERLAY"
     }
 
     private val canvas = MeasureCanvas(context)

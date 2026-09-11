@@ -1,4 +1,4 @@
-package dev.pinij.inspector
+package com.noctisoft.layoutmeasurement
 
 import kotlin.math.max
 import kotlin.math.min

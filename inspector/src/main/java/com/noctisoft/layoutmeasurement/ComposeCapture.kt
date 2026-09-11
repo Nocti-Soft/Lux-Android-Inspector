@@ -1,4 +1,4 @@
-package dev.pinij.inspector
+package com.noctisoft.layoutmeasurement
 
 import android.view.View
 import androidx.compose.ui.node.RootForTest

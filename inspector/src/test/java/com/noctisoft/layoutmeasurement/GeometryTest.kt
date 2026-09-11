@@ -1,4 +1,4 @@
-package dev.pinij.inspector
+package com.noctisoft.layoutmeasurement
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

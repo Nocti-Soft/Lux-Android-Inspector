@@ -1,4 +1,4 @@
-package dev.pinij.inspector
+package com.noctisoft.layoutmeasurement
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -14,7 +14,7 @@ object NotificationTrigger {
 
     private const val CHANNEL_ID = "layout_inspector"
     private const val NOTIFICATION_ID = 0x1A1
-    const val ACTION_TOGGLE = "dev.pinij.inspector.ACTION_TOGGLE"
+    const val ACTION_TOGGLE = "com.noctisoft.layoutmeasurement.ACTION_TOGGLE"
 
     fun show(context: Context) {
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
