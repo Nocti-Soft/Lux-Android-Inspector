@@ -26,19 +26,118 @@ class FloatingInspectorControlTest {
     }
 
     @Test
-    fun `circle click expands and docked circle click undocks once`() {
+    fun `invalid safe area rejects collapsed and expanded touch streams`() {
+        listOf(FloatingControlState.COLLAPSED, FloatingControlState.EXPANDED).forEach { state ->
+            val control = FloatingInspectorControl(RuntimeEnvironment.getApplication())
+            var collapsed = 0
+            control.onCollapseRequested = { collapsed++ }
+            control.setSafeArea(SafeArea(10, 10, 10, 100))
+            control.render(state, FloatingPlacement(), MeasureMode.SIZE, false, true)
+            layout(control, 200, 200)
+
+            assertFalse(control.dispatchTouchEvent(event(MotionEvent.ACTION_DOWN, 20f, 20f)))
+            assertFalse(control.dispatchTouchEvent(event(MotionEvent.ACTION_UP, 20f, 20f)))
+            assertEquals(0, collapsed)
+        }
+    }
+
+    @Test
+    fun `expanded menu reanchors after initial layout and resize`() {
+        val control = FloatingInspectorControl(RuntimeEnvironment.getApplication())
+        control.setSafeArea(SafeArea(0, 0, 500, 800))
+        control.render(FloatingControlState.EXPANDED, FloatingPlacement(0.5f, 0.5f), MeasureMode.SIZE, false, true)
+        layout(control, 500, 800)
+
+        val initialCircle = circle(control)
+        val initialMenu = menu(control)
+        assertTrue(initialMenu.x + initialMenu.width <= initialCircle.x - 8)
+
+        control.setSafeArea(SafeArea(0, 0, 320, 500))
+        layout(control, 320, 500)
+        val resizedCircle = circle(control)
+        val resizedMenu = menu(control)
+        assertTrue(resizedMenu.x >= 0)
+        assertTrue(resizedMenu.x + resizedMenu.width <= 320)
+        assertTrue(resizedMenu.x + resizedMenu.width <= resizedCircle.x - 8)
+    }
+
+    @Test
+    fun `dispatched circle taps expand and undock exactly once`() {
         val control = visibleControl(FloatingControlState.COLLAPSED)
         var expanded = 0
-        control.onExpandRequested = { expanded++ }
-
-        circle(control).performClick()
-
+        control.onExpandRequested = {
+            expanded++
+            control.render(FloatingControlState.EXPANDED, FloatingPlacement(), MeasureMode.SIZE, false, true)
+        }
+        tap(control, circle(control))
         assertEquals(1, expanded)
+
         control.render(FloatingControlState.DOCKED_RIGHT, FloatingPlacement(dockSide = DockSide.RIGHT), MeasureMode.SIZE, false, true)
         var undocked = 0
-        control.onUndockRequested = { undocked++ }
-        circle(control).performClick()
+        control.onUndockRequested = {
+            undocked++
+            control.render(FloatingControlState.COLLAPSED, FloatingPlacement(), MeasureMode.SIZE, false, true)
+        }
+        tap(control, circle(control))
         assertEquals(1, undocked)
+    }
+
+    @Test
+    fun `active pointer loss cancels drag without a click or placement commit`() {
+        val control = visibleControl(FloatingControlState.COLLAPSED)
+        val circle = circle(control)
+        val originalX = circle.x
+        val originalY = circle.y
+        var expanded = 0
+        var committed = 0
+        control.onExpandRequested = { expanded++ }
+        control.onPlacementChanged = { committed++ }
+        control.onDockRequested = { _, _ -> committed++ }
+        val point = centerInRoot(circle)
+
+        control.dispatchTouchEvent(event(MotionEvent.ACTION_DOWN, point.first, point.second))
+        control.dispatchTouchEvent(event(MotionEvent.ACTION_MOVE, point.first + 80f, point.second + 80f))
+        control.dispatchTouchEvent(pointerUpEvent(point.first + 80f, point.second + 80f))
+
+        assertEquals(originalX, circle.x)
+        assertEquals(originalY, circle.y)
+        assertEquals(0, expanded)
+        assertEquals(0, committed)
+    }
+
+    @Test
+    fun `expanded and docked drags collapse or undock before committing placement`() {
+        val expanded = visibleControl(FloatingControlState.EXPANDED)
+        var collapsed = 0
+        var expandedPlacement = 0
+        expanded.onCollapseRequested = {
+            collapsed++
+            expanded.render(FloatingControlState.COLLAPSED, FloatingPlacement(), MeasureMode.SIZE, false, true)
+        }
+        expanded.onPlacementChanged = {
+            expandedPlacement++
+            expanded.render(FloatingControlState.COLLAPSED, it, MeasureMode.SIZE, false, true)
+        }
+        dragTo(expanded, circle(expanded), 300f, 500f)
+        assertEquals(1, collapsed)
+        assertEquals(1, expandedPlacement)
+        assertEquals(View.GONE, menu(expanded).visibility)
+
+        val docked = visibleControl(FloatingControlState.DOCKED_LEFT)
+        var undocked = 0
+        var dockedPlacement = 0
+        docked.onUndockRequested = {
+            undocked++
+            docked.render(FloatingControlState.COLLAPSED, FloatingPlacement(), MeasureMode.SIZE, false, true)
+        }
+        docked.onPlacementChanged = {
+            dockedPlacement++
+            docked.render(FloatingControlState.COLLAPSED, it, MeasureMode.SIZE, false, true)
+        }
+        dragTo(docked, circle(docked), 300f, 500f)
+        assertEquals(1, undocked)
+        assertEquals(1, dockedPlacement)
+        assertEquals(View.GONE, menu(docked).visibility)
     }
 
     @Test
@@ -51,13 +150,17 @@ class FloatingInspectorControlTest {
         control.onHideRequested = { hidden++ }
         control.onStopRequested = { stopped++ }
 
+        assertEquals("• Size", button(control, "Size").text)
         button(control, "Size").performClick()
         button(control, "Gap").performClick()
         button(control, "Ruler").performClick()
         button(control, "Bounds").performClick()
         button(control, "Hide Inspector").performClick()
         button(control, "Settings").performClick()
+        assertEquals(View.VISIBLE, button(control, "Back").visibility)
         button(control, "Stop Inspector").performClick()
+        button(control, "Back").performClick()
+        assertEquals(View.VISIBLE, button(control, "Settings").visibility)
 
         assertEquals(listOf(MeasureMode.SIZE, MeasureMode.GAP, MeasureMode.RULER, MeasureMode.BOUNDS), selected)
         assertEquals(1, hidden)
@@ -137,6 +240,26 @@ class FloatingInspectorControlTest {
     }
 
     @Test
+    fun `constrained menu scrolls to and activates its final action`() {
+        val control = FloatingInspectorControl(RuntimeEnvironment.getApplication())
+        control.setSafeArea(SafeArea(20, 10, 180, 130))
+        control.render(FloatingControlState.EXPANDED, FloatingPlacement(0.9f, 0.5f), MeasureMode.SIZE, true, true)
+        layout(control, 200, 160)
+        val scroll = find(control) { it is ScrollView } as ScrollView
+        val panel = scroll.getChildAt(0)
+        var hidden = 0
+        control.onHideRequested = { hidden++ }
+
+        scroll.scrollTo(0, panel.height)
+        layout(control, 200, 160)
+        val finalAction = button(control, "Hide Inspector")
+        assertTrue(scroll.scrollY > 0)
+        assertTrue(finalAction.bottom - scroll.scrollY <= scroll.height)
+        finalAction.performClick()
+        assertEquals(1, hidden)
+    }
+
+    @Test
     fun `resize keeps circle and scrollable menu inside safe area`() {
         val control = FloatingInspectorControl(RuntimeEnvironment.getApplication())
         control.setSafeArea(SafeArea(20, 10, 140, 110))
@@ -172,6 +295,8 @@ class FloatingInspectorControlTest {
 
     private fun circle(control: ViewGroup): TextView = find(control) { it is TextView && it.text == "◎" } as TextView
 
+    private fun menu(control: ViewGroup): ViewGroup = find(control) { it is ScrollView }?.parent as ViewGroup
+
     private fun button(control: ViewGroup, label: String): Button = find(control) { it is Button && (it.text == label || it.contentDescription == label) } as Button
 
     private fun find(root: View, predicate: (View) -> Boolean): View? {
@@ -180,6 +305,48 @@ class FloatingInspectorControlTest {
         repeat(root.childCount) { index -> find(root.getChildAt(index), predicate)?.let { return it } }
         return null
     }
+
+    private fun tap(control: FloatingInspectorControl, view: View) {
+        val point = centerInRoot(view)
+        control.dispatchTouchEvent(event(MotionEvent.ACTION_DOWN, point.first, point.second))
+        control.dispatchTouchEvent(event(MotionEvent.ACTION_UP, point.first, point.second))
+    }
+
+    private fun dragTo(control: FloatingInspectorControl, view: View, x: Float, y: Float) {
+        val point = centerInRoot(view)
+        control.dispatchTouchEvent(event(MotionEvent.ACTION_DOWN, point.first, point.second))
+        control.dispatchTouchEvent(event(MotionEvent.ACTION_MOVE, x, y))
+        control.dispatchTouchEvent(event(MotionEvent.ACTION_UP, x, y))
+    }
+
+    private fun centerInRoot(view: View): Pair<Float, Float> {
+        var x = view.x + view.width / 2f
+        var y = view.y + view.height / 2f
+        var parent = view.parent
+        while (parent is View) {
+            x += parent.x - parent.scrollX
+            y += parent.y - parent.scrollY
+            parent = parent.parent
+        }
+        return x to y
+    }
+
+    private fun pointerUpEvent(x: Float, y: Float): MotionEvent = MotionEvent.obtain(
+        0,
+        0,
+        MotionEvent.ACTION_POINTER_UP,
+        1,
+        arrayOf(MotionEvent.PointerProperties().apply { id = 0; toolType = MotionEvent.TOOL_TYPE_FINGER }),
+        arrayOf(MotionEvent.PointerCoords().apply { this.x = x; this.y = y }),
+        0,
+        0,
+        1f,
+        1f,
+        0,
+        0,
+        0,
+        0,
+    )
 
     private fun event(action: Int, x: Float, y: Float): MotionEvent = MotionEvent.obtain(0, 0, action, x, y, 0)
 }

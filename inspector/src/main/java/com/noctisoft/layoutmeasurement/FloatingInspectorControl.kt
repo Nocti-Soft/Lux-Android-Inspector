@@ -37,6 +37,7 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
     private var renderedIsActive = false
     private var renderedCanHide = false
     private var dragging = false
+    private var activePointerId = MotionEvent.INVALID_POINTER_ID
 
     private val dismissLayer = View(context).apply {
         visibility = GONE
@@ -128,6 +129,11 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
         }
     }
 
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        if (!dragging && renderedState == FloatingControlState.EXPANDED) positionMenu()
+    }
+
     override fun dispatchDraw(canvas: Canvas) {
         val save = canvas.save()
         canvas.clipRect(safeArea.left, safeArea.top, safeArea.right, safeArea.bottom)
@@ -136,10 +142,13 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
     }
 
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        if (safeArea.width <= 0 || safeArea.height <= 0) {
+            cancelDrag()
+            return false
+        }
         if (renderedState != FloatingControlState.EXPANDED &&
             event.actionMasked == MotionEvent.ACTION_DOWN &&
-            (safeArea.width <= 0 || safeArea.height <= 0 ||
-                event.x !in safeArea.left.toFloat()..safeArea.right.toFloat() ||
+            (event.x !in safeArea.left.toFloat()..safeArea.right.toFloat() ||
                 event.y !in safeArea.top.toFloat()..safeArea.bottom.toFloat())
         ) return false
         return super.dispatchTouchEvent(event)
@@ -148,7 +157,6 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
     @SuppressLint("ClickableViewAccessibility")
     private fun installDragGesture() {
         val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
-        var activePointerId = MotionEvent.INVALID_POINTER_ID
         var downRawX = 0f
         var downRawY = 0f
         var startX = 0f
@@ -208,8 +216,8 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
 
     private fun cancelDrag(): Boolean {
         dragging = false
+        activePointerId = MotionEvent.INVALID_POINTER_ID
         applyButtonPosition()
-        activeMenuVisibility()
         return true
     }
 
