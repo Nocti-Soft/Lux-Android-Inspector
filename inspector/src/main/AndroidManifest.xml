@@ -15,10 +15,11 @@
         </provider>
 
         <receiver
-            android:name="com.noctisoft.layoutmeasurement.ToggleReceiver"
+            android:name="com.noctisoft.layoutmeasurement.InspectorActionReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.noctisoft.layoutmeasurement.ACTION_TOGGLE" />
+                <action android:name="com.noctisoft.layoutmeasurement.ACTION_SHOW" />
+                <action android:name="com.noctisoft.layoutmeasurement.ACTION_STOP" />
             </intent-filter>
         </receiver>
     </application>

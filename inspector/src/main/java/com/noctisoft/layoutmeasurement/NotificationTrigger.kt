@@ -9,42 +9,71 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 
-/** Ongoing low-priority notification whose tap toggles the inspector. */
 object NotificationTrigger {
-
     private const val CHANNEL_ID = "layout_inspector"
     private const val NOTIFICATION_ID = 0x1A1
-    const val ACTION_TOGGLE = "com.noctisoft.layoutmeasurement.ACTION_TOGGLE"
+    const val ACTION_SHOW = "com.noctisoft.layoutmeasurement.ACTION_SHOW"
+    const val ACTION_STOP = "com.noctisoft.layoutmeasurement.ACTION_STOP"
+
+    private var appContext: Context? = null
+    private val controllerListener: () -> Unit = {
+        appContext?.let(::show)
+    }
+
+    fun initialize(context: Context) {
+        if (appContext != null) return
+        appContext = context.applicationContext
+        InspectorController.addListener(controllerListener)
+        show(context)
+    }
+
+    fun isRecoveryAvailable(context: Context): Boolean =
+        NotificationManagerCompat.from(context).areNotificationsEnabled()
 
     fun show(context: Context) {
-        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val app = context.applicationContext
+        val manager = app.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (android.os.Build.VERSION.SDK_INT >= 26) {
-            nm.createNotificationChannel(
-                NotificationChannel(CHANNEL_ID, "Layout Inspector",
-                    NotificationManager.IMPORTANCE_LOW)
+            manager.createNotificationChannel(
+                NotificationChannel(CHANNEL_ID, "Layout Inspector", NotificationManager.IMPORTANCE_LOW)
             )
         }
-        val pi = PendingIntent.getBroadcast(
-            context, 0,
-            Intent(ACTION_TOGGLE).setPackage(context.packageName),
-            PendingIntent.FLAG_IMMUTABLE
+        if (!isRecoveryAvailable(app)) return
+
+        val model = buildInspectorNotificationModel(InspectorController.isActive, InspectorController.mode)
+        val showIntent = PendingIntent.getBroadcast(
+            app,
+            1,
+            Intent(ACTION_SHOW).setPackage(app.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(app, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_crop)
             .setContentTitle("Layout Inspector")
-            .setContentText("Tap to toggle measurement overlay")
+            .setContentText(model.contentText)
             .setOngoing(true)
-            .setContentIntent(pi)
-            .build()
-        // Silently no-op when POST_NOTIFICATIONS not granted (API 33+).
-        if (NotificationManagerCompat.from(context).areNotificationsEnabled()) {
-            runCatching { nm.notify(NOTIFICATION_ID, notification) }
+            .setContentIntent(showIntent)
+
+        if (model.showStopAction) {
+            val stopIntent = PendingIntent.getBroadcast(
+                app,
+                2,
+                Intent(ACTION_STOP).setPackage(app.packageName),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+            builder.addAction(0, "Stop Inspector", stopIntent)
         }
+
+        runCatching { manager.notify(NOTIFICATION_ID, builder.build()) }
     }
 }
 
-class ToggleReceiver : BroadcastReceiver() {
+class InspectorActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == NotificationTrigger.ACTION_TOGGLE) InspectorController.revealControls(RevealSource.NOTIFICATION)
+        when (intent.action) {
+            NotificationTrigger.ACTION_SHOW -> InspectorController.revealControls(RevealSource.NOTIFICATION)
+            NotificationTrigger.ACTION_STOP -> InspectorController.stopInspection()
+        }
+        NotificationTrigger.show(context)
     }
 }
