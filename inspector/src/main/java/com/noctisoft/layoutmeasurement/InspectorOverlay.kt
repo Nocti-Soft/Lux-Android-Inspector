@@ -69,11 +69,11 @@ class InspectorOverlay(context: Context) : FrameLayout(context) {
                 textSize = 12f
                 setOnClickListener { onClick() }
             })
-            btn("Size") { InspectorController.mode = MeasureMode.SIZE }
-            btn("Gap") { InspectorController.mode = MeasureMode.GAP }
-            btn("Ruler") { InspectorController.mode = MeasureMode.RULER }
-            btn("Bounds") { InspectorController.mode = MeasureMode.BOUNDS }
-            btn("✕") { InspectorController.isActive = false }
+            btn("Size") { InspectorController.selectMode(MeasureMode.SIZE) }
+            btn("Gap") { InspectorController.selectMode(MeasureMode.GAP) }
+            btn("Ruler") { InspectorController.selectMode(MeasureMode.RULER) }
+            btn("Bounds") { InspectorController.selectMode(MeasureMode.BOUNDS) }
+            btn("✕") { InspectorController.stopInspection() }
         }
 
     /** Inner view doing all measurement touch + drawing. */

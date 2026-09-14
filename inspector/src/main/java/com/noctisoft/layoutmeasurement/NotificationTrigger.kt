@@ -45,6 +45,6 @@ object NotificationTrigger {
 
 class ToggleReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == NotificationTrigger.ACTION_TOGGLE) InspectorController.toggle()
+        if (intent.action == NotificationTrigger.ACTION_TOGGLE) InspectorController.revealControls(RevealSource.NOTIFICATION)
     }
 }

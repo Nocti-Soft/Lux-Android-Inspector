@@ -15,7 +15,7 @@ object InspectorLifecycle : Application.ActivityLifecycleCallbacks {
         // Re-post each resume: no-op if already shown; covers permission granted after init.
         NotificationTrigger.show(activity)
         detectors.remove(activity)?.stop(activity) // defensive: never stack registrations
-        val detector = ShakeDetector { InspectorController.toggle() }
+        val detector = ShakeDetector { InspectorController.revealControls(RevealSource.SHAKE) }
         detectors[activity] = detector
         detector.start(activity)
     }
