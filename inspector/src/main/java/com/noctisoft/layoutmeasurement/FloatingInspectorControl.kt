@@ -175,8 +175,8 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
                 MotionEvent.ACTION_MOVE -> {
                     val index = event.findPointerIndex(activePointerId)
                     if (index < 0) return@setOnTouchListener cancelDrag()
-                    val dx = event.getRawX(index) - downRawX
-                    val dy = event.getRawY(index) - downRawY
+                    val dx = rawXAt(event, index) - downRawX
+                    val dy = rawYAt(event, index) - downRawY
                     if (!dragging && hypot(dx.toDouble(), dy.toDouble()) >= touchSlop) {
                         dragging = true
                         when (renderedState) {
@@ -213,6 +213,12 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
             }
         }
     }
+
+    private fun rawXAt(event: MotionEvent, index: Int): Float =
+        if (android.os.Build.VERSION.SDK_INT >= 29) event.getRawX(index) else event.rawX + event.getX(index) - event.x
+
+    private fun rawYAt(event: MotionEvent, index: Int): Float =
+        if (android.os.Build.VERSION.SDK_INT >= 29) event.getRawY(index) else event.rawY + event.getY(index) - event.y
 
     private fun cancelDrag(): Boolean {
         dragging = false

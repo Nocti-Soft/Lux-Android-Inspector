@@ -217,6 +217,18 @@ class FloatingInspectorControlTest {
     }
 
     @Test
+    @Config(sdk = [24], application = Application::class)
+    fun `dragging commits placement on min SDK`() {
+        val control = visibleControl(FloatingControlState.COLLAPSED)
+        var committed = 0
+        control.onPlacementChanged = { committed++ }
+
+        dragTo(control, circle(control), 300f, 500f)
+
+        assertEquals(1, committed)
+    }
+
+    @Test
     fun `cancelled drag restores committed position without placement callback`() {
         val control = visibleControl(FloatingControlState.COLLAPSED)
         var placements = 0
