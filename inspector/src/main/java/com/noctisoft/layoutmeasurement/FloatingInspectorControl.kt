@@ -279,13 +279,6 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
         menu.y = floatingButton.y.roundToInt().coerceIn(safeArea.top, maxY).toFloat()
     }
 
-    private fun activeMenuVisibility() {
-        val expanded = renderedState == FloatingControlState.EXPANDED
-        dismissLayer.visibility = if (expanded) VISIBLE else GONE
-        menu.visibility = if (expanded) VISIBLE else GONE
-        positionMenu()
-    }
-
     private fun showMainPanel() {
         settingsPanel.visibility = GONE
         mainPanel.visibility = VISIBLE

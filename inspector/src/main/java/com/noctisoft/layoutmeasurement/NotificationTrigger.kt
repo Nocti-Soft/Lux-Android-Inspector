@@ -28,8 +28,14 @@ object NotificationTrigger {
         show(context)
     }
 
-    fun isRecoveryAvailable(context: Context): Boolean =
-        NotificationManagerCompat.from(context).areNotificationsEnabled()
+    fun isRecoveryAvailable(context: Context): Boolean {
+        if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return false
+        if (android.os.Build.VERSION.SDK_INT < 26) return true
+        val manager = context.applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        return manager.getNotificationChannel(CHANNEL_ID)?.importance?.let {
+            it != NotificationManager.IMPORTANCE_NONE
+        } == true
+    }
 
     fun show(context: Context) {
         val app = context.applicationContext

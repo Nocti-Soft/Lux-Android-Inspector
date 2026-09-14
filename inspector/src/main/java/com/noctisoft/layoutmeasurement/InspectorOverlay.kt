@@ -1,6 +1,7 @@
 package com.noctisoft.layoutmeasurement
 
 import android.content.Context
+import android.os.Looper
 import android.view.View
 import android.widget.FrameLayout
 import androidx.core.graphics.Insets
@@ -18,10 +19,23 @@ class InspectorOverlay(
     private val canvas = MeasureCanvas(context)
     private val controls = FloatingInspectorControl(context)
     private var lastSafeInsets = Insets.NONE
+    private var observedPlacement = InspectorController.placement
+    private var observedActive = InspectorController.isActive
+    @Volatile private var pendingStopReset = false
     private val syncRunnable = Runnable(::sync)
     private val controllerListener: () -> Unit = {
-        removeCallbacks(syncRunnable)
-        post(syncRunnable)
+        val active = InspectorController.isActive
+        val placement = InspectorController.placement
+        if (observedActive && !active) pendingStopReset = true
+        if (placement != observedPlacement) placementStore.save(placement)
+        observedActive = active
+        observedPlacement = placement
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            sync()
+        } else {
+            removeCallbacks(syncRunnable)
+            post(syncRunnable)
+        }
     }
 
     init {
@@ -48,18 +62,13 @@ class InspectorOverlay(
         }
         onExpandRequested = { InspectorController.expandControls() }
         onCollapseRequested = { InspectorController.collapseControls() }
-        onUndockRequested = {
-            InspectorController.undockControls()
-            placementStore.save(InspectorController.placement)
-        }
+        onUndockRequested = { InspectorController.undockControls() }
         onPlacementChanged = { placement ->
             InspectorController.updatePlacement(placement.xFraction, placement.yFraction)
-            placementStore.save(InspectorController.placement)
         }
         onDockRequested = { side, placement ->
             InspectorController.updatePlacement(placement.xFraction, placement.yFraction)
             InspectorController.dock(side)
-            placementStore.save(InspectorController.placement)
         }
     }
 
@@ -96,6 +105,8 @@ class InspectorOverlay(
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        observedPlacement = InspectorController.placement
+        observedActive = InspectorController.isActive
         InspectorController.addListener(controllerListener)
         ViewCompat.getRootWindowInsets(this)?.let { lastSafeInsets = safeInsets(it) }
         updateSafeArea()
@@ -117,7 +128,10 @@ class InspectorOverlay(
     private fun sync() {
         val active = InspectorController.isActive
         canvas.visibility = if (active) VISIBLE else GONE
-        if (!active) canvas.clearSelection()
+        if (pendingStopReset || !active) {
+            canvas.clearSelection()
+            pendingStopReset = false
+        }
         canvas.invalidate()
         controls.render(
             state = InspectorController.controlState,
