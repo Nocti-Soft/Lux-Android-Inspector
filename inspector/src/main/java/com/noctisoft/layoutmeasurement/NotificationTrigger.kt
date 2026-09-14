@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 
@@ -64,8 +65,20 @@ object NotificationTrigger {
             builder.addAction(0, "Stop Inspector", stopIntent)
         }
 
-        runCatching { manager.notify(NOTIFICATION_ID, builder.build()) }
+        postInspectorNotification(
+            post = { manager.notify(NOTIFICATION_ID, builder.build()) },
+            reportFailure = { throwable ->
+                Log.w("LayoutInspector", "Failed to post inspector notification", throwable)
+            },
+        )
     }
+}
+
+internal fun postInspectorNotification(
+    post: () -> Unit,
+    reportFailure: (Throwable) -> Unit,
+) {
+    runCatching(post).onFailure(reportFailure)
 }
 
 class InspectorActionReceiver : BroadcastReceiver() {
