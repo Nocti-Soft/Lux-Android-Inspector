@@ -86,6 +86,7 @@ class InspectorOverlayTest {
     fun `dispatched insets constrain only controls and are not consumed across resize`() {
         val fixture = overlay()
         val originalPadding = intArrayOf(fixture.host.paddingLeft, fixture.host.paddingTop, fixture.host.paddingRight, fixture.host.paddingBottom)
+        val hostCoordinates = fixture.host.left to fixture.host.top
         val insets = WindowInsetsCompat.Builder()
             .setInsets(WindowInsetsCompat.Type.systemBars(), Insets.of(4, 10, 6, 12))
             .setInsets(WindowInsetsCompat.Type.displayCutout(), Insets.of(8, 3, 2, 1))
@@ -94,6 +95,7 @@ class InspectorOverlayTest {
 
         assertSame(insets, ViewCompat.dispatchApplyWindowInsets(fixture.overlay, insets))
         assertEquals(SafeArea(8, 10, 306, 468), privateField(controls(fixture.overlay), "safeArea"))
+        assertEquals(hostCoordinates, fixture.host.left to fixture.host.top)
         assertEquals(originalPadding.toList(), listOf(fixture.host.paddingLeft, fixture.host.paddingTop, fixture.host.paddingRight, fixture.host.paddingBottom))
         InspectorController.selectMode(MeasureMode.SIZE)
         layout(fixture.overlay, 320, 480)
@@ -194,6 +196,25 @@ class InspectorOverlayTest {
         layout(fixture.overlay, 320, 480)
         assertEquals(View.VISIBLE, controls(fixture.overlay).visibility)
         assertTrue(ViewCapture.captureAll(fixture.activity.window.decorView).none { it.label == "MeasureCanvas" || it.label == "FloatingInspectorControl" })
+    }
+
+    @Test
+    fun `detach stop and immediate restart does not restore obsolete selection`() {
+        val fixture = overlay()
+        val canvas = canvas(fixture.overlay)
+        InspectorController.selectMode(MeasureMode.SIZE)
+        canvas.dispatchTouchEvent(event(MotionEvent.ACTION_DOWN, 20f, 20f))
+        assertNotNull(privateField(canvas, "selectedA"))
+
+        val parent = fixture.overlay.parent as ViewGroup
+        parent.removeView(fixture.overlay)
+        InspectorController.stopInspection()
+        InspectorController.selectMode(MeasureMode.SIZE)
+        parent.addView(fixture.overlay, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        layout(fixture.overlay, 320, 480)
+
+        assertEquals(null, privateField(canvas, "selectedA"))
+        assertEquals(emptyList<CapturedNode>(), privateField(canvas, "nodes"))
     }
 
     private fun overlay(): Fixture {

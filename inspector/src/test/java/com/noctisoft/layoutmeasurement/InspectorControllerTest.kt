@@ -91,4 +91,25 @@ class InspectorControllerTest {
         InspectorController.removeListener(listener)
         assertEquals(1, fired)
     }
+
+    @Test
+    fun `restoring placement does not start session or reveal control`() {
+        InspectorController.stopInspection()
+        InspectorController.hideControls()
+        InspectorController.restorePlacement(FloatingPlacement(0.1f, 0.8f, DockSide.RIGHT))
+
+        assertEquals(false, InspectorController.isActive)
+        assertEquals(FloatingControlState.HIDDEN, InspectorController.controlState)
+        assertEquals(DockSide.RIGHT, InspectorController.placement.dockSide)
+    }
+
+    @Test
+    fun `reveal while running preserves active mode`() {
+        InspectorController.selectMode(MeasureMode.GAP)
+        InspectorController.hideControlsForStartup()
+        InspectorController.revealControls(RevealSource.NOTIFICATION)
+
+        assertEquals(true, InspectorController.isActive)
+        assertEquals(MeasureMode.GAP, InspectorController.mode)
+    }
 }

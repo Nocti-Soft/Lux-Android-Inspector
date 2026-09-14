@@ -47,4 +47,22 @@ class FloatingControlGeometryTest {
             FloatingControlGeometry.dockedPosition(DockSide.RIGHT, 500, safe, size),
         )
     }
+
+    @Test
+    fun `zero safe area remains anchored without invalid coordinates`() {
+        val zero = SafeArea(10, 20, 10, 20)
+        val placement = FloatingControlGeometry.toNormalized(PixelPoint(200, 300), zero, size)
+
+        assertEquals(FloatingPlacement(0f, 0f, DockSide.NONE), placement)
+        assertEquals(PixelPoint(10, 20), FloatingControlGeometry.fromNormalized(placement, zero, size))
+    }
+
+    @Test
+    fun `oversized control clamps to the safe area origin`() {
+        val small = SafeArea(20, 40, 60, 70)
+        val oversized = ControlSize(100, 100)
+
+        assertEquals(PixelPoint(20, 40), FloatingControlGeometry.clamp(PixelPoint(50, 60), small, oversized))
+        assertEquals(PixelPoint(20, 40), FloatingControlGeometry.fromNormalized(FloatingPlacement(1f, 1f), small, oversized))
+    }
 }

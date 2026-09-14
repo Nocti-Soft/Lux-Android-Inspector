@@ -28,7 +28,10 @@ object InspectorLifecycle : Application.ActivityLifecycleCallbacks {
         val decor = activity.window.decorView as? ViewGroup ?: return
         if (decor.findViewWithTag<android.view.View>(InspectorOverlay.TAG) != null) return
         decor.addView(
-            InspectorOverlay(activity),
+            InspectorOverlay(
+                context = activity,
+                placementStore = InspectorPlacementStore(activity.applicationContext),
+            ),
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
         )

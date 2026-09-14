@@ -117,6 +117,7 @@ class InspectorOverlay(
     override fun onDetachedFromWindow() {
         InspectorController.removeListener(controllerListener)
         removeCallbacks(syncRunnable)
+        canvas.clearSelection()
         super.onDetachedFromWindow()
     }
 
