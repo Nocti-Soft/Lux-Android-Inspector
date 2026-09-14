@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-12
 **Project:** Android Layout Inspector
-**Status:** Approved interaction design, pending written-spec review
+**Status:** Approved
 
 ## 1. Purpose
 
