@@ -90,7 +90,13 @@ internal fun postInspectorNotification(
 class InspectorActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
-            NotificationTrigger.ACTION_SHOW -> InspectorController.revealControls(RevealSource.NOTIFICATION)
+            NotificationTrigger.ACTION_SHOW -> {
+                val previousPlacement = InspectorController.placement
+                InspectorController.revealControls(RevealSource.NOTIFICATION)
+                if (InspectorController.placement != previousPlacement) {
+                    InspectorPlacementStore(context).save(InspectorController.placement)
+                }
+            }
             NotificationTrigger.ACTION_STOP -> InspectorController.stopInspection()
         }
         NotificationTrigger.show(context)

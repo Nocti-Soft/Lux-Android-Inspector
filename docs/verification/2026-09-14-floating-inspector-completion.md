@@ -1,24 +1,56 @@
 # Floating inspector candidate completion verification
 
-**Status:** `DONE_WITH_CONCERNS` — candidate completion evidence only; an independent whole-branch review and coordinator rerun remain required before approval.
+**Status:** `DONE_WITH_CONCERNS` — the final receiver-boundary persistence fix and its automated verification are recorded. Independent scoped re-review and the coordinator’s rebuilt-APK smoke remain pending; no new device result is claimed here.
 
 **Original fresh-gate source HEAD:** `ba511534fe44c9d021f3be7517a3eb3ce58a77f4` (`docs: close Task8 verification gaps`). Post-build artifact evidence below was collected at documentation-only HEAD `ff3e21976472f365d15b3afb08197335d288a950`.
+
+## Current status — refreshed 2026-09-15
+
+The following is the status-refresh snapshot taken before this final fix: the connected worktree was `AndroidLayoutInspector/.worktrees/agent-e2b3fe0f`, registered as workspace `5296a6ca-55af-4187-8fbe-e870db9010d8`. Read-only Git checks confirmed branch `impl/inspector-floating-control`, HEAD `847a4d107bf551871ccea852aa335dd01a09bee3`, and no uncommitted changes before the refresh. The final-fix implementation and automated verification recorded below supersede its open persistence blocker; the historical device evidence remains unchanged.
+
+| Completion gate | Latest recorded status |
+| --- | --- |
+| Individual task gates 1–9 | Complete; the final ledger records individual-task approval, not whole-branch integration approval. |
+| Whole-branch review | Completed at `2026-09-14T17:23:14Z` for `f842369..847a4d1`; **Ready to integrate: NO**. Original findings: 0 Critical, 1 Important, 1 Minor. |
+| Coordinator forced test/debug-build gate | Completed at `2026-09-14T17:17:55Z` on `847a4d1`, exit 0; 60 inspector tests and 3 sample tests, with zero failures, errors, or skips. |
+| Rebuilt-APK Android 16 smoke | Completed at `2026-09-14T17:21:16Z` on `847a4d1`; all seven recorded checks passed for debug APK `9c297175aca42245eafef92fd03a1530f89054b1f05372871bff1e43ebf9120e`. |
+| Important persistence correction | Implemented at the notification receiver boundary; focused Robolectric receiver tests cover left/SDK 35 and right/SDK 24 no-overlay undocking, retaining normalized coordinates and active Gap session. Focused class and forced test/debug-build gate passed; independent scoped re-review and rebuilt-APK smoke are pending. |
+| Minor audit wording | Historical revision/path wording was clarified in this documentation refresh and is incorporated in the final-fix commit; independent scoped re-review is pending. |
+| Overall integration approval | **Pending** independent scoped re-review and a coordinator rebuilt-APK smoke for the final-fix code. |
+
+The seven smoke checks cover latest-APK installation, fresh hidden startup, single-control shake reveal, active Gap hiding, notification Gap/Stop content, notification restoration retaining Gap, and notification Stop. These are recorded results, not tests rerun during this status refresh. They do not cover the no-overlay persistence scenario found by the reviewer.
+
+Authoritative local records:
+
+- `.superpowers/sdd/2026-09-14-inspector-floating-control/progress.md`
+- `.superpowers/sdd/2026-09-14-inspector-floating-control/final-review.md`
+- `.superpowers/sdd/2026-09-14-inspector-floating-control/final-review-job.json`
+- `.superpowers/sdd/2026-09-14-inspector-floating-control/final-coordinator-verification.json`
+- `.superpowers/sdd/2026-09-14-inspector-floating-control/device-validation/final-smoke-20260914T172032Z/result.json`
+
+### Resolved Important finding: notification undock without an attached overlay
+
+The final reviewer identified that `InspectorActionReceiver` dispatches Show, which can clear the dock side in controller memory, but persistence depended on an attached `InspectorOverlay` listener. The final fix snapshots the placement before notification Show, invokes `revealControls(RevealSource.NOTIFICATION)`, and saves the resulting placement through `InspectorPlacementStore(context)` only if it changed. This preserves the Android-free controller and the overlay observer while covering the no-overlay path.
+
+Focused Application-only receiver regressions seed left/SDK 35 and right/SDK 24 docked placements, dispatch `ACTION_SHOW` with no attached overlay, and verify collapsed controller state plus freshly loaded `DockSide.NONE`, original normalized coordinates, and retained active Gap session. The new RED run failed exactly because the store retained `LEFT`/`RIGHT`; focused GREEN and the forced test/debug-build gate passed. Full output is retained in ignored `.superpowers/sdd/2026-09-14-inspector-floating-control/final-fix-1-*.log` files. Independent scoped re-review and coordinator rebuilt-APK smoke remain pending.
+
+The saved final review described coordinator verification and smoke as pending because its review inputs predated those results. Those earlier candidate-code results remain historical evidence only. The final-fix forced test/debug-build gate has now passed; the coordinator must still complete the independent scoped review and rebuilt-APK smoke for this new code.
 
 ## Tasks 6–9
 
 | Task | Result | Evidence |
 | --- | --- | --- |
-| 6 — lifecycle, startup, and persistence | PASS | Commit `3810781`; focused lifecycle/overlay tests and the inspector unit suite passed. Startup restores placement but resets a fresh process to stopped/hidden; detached Stop/restart clears stale canvas selection. |
+| 6 — lifecycle, startup, and persistence | Individual gate approved; its prior final-review persistence exception is superseded by the receiver-boundary correction above | Commit `3810781`; focused lifecycle/overlay tests and the inspector unit suite passed. Startup restores placement but resets a fresh process to stopped/hidden; detached Stop/restart clears stale canvas selection. |
 | 7 — sample edge-to-edge | PASS | Commit `c22ed52`; all three sample Activities explicitly lay out behind system bars, proven by three SDK 28 Robolectric cases. |
 | 8 — Android 16 validation | PASS within stated bounds | Production revision `c22ed52`; 18/18 Android 16/API 36 **emulator** matrix rows passed, plus a separate real channel-block guard PASS. |
-| 9 — final hygiene | PASS with inherited diagnostics | Fresh test/build, lint, and sample release gates below passed at `ba51153`; no production code was changed. |
+| 9 — final hygiene | Individual gate approved; historical integration blocker is superseded, with final-fix independent re-review and rebuilt-APK smoke pending | Test/build, lint, and sample release gates below passed at `ba51153`; coordinator tests/debug build and smoke subsequently passed at `847a4d1`. |
 
 ## Final state and behavior
 
 - Fresh process state is `session=STOPPED` and `control=HIDDEN`. Saved normalized X/Y placement and dock side are loaded, but neither an active measurement session nor an expanded menu is restored.
 - The session and control visibility are independent. Selecting `SIZE`, `GAP`, `RULER`, or `BOUNDS` starts/switches the sole active session directly. **Stop Inspector** ends the session and clears measurement state while keeping the control available.
 - **Hide Inspector** removes the control while retaining an active session and its rendered output. It is available only when notification recovery is available. A deliberately hidden control rejects shake recovery; the notification Show action restores it. Startup-hidden controls may be revealed by shake or Show, and docked controls remain half-visible and tappable.
-- Placement is persisted on committed moves/docks and survives Activity recreation and process restart. The restored process remains hidden/stopped until reveal; the saved dock/position then reappears. Notification **Show** restores/expands the control state without stopping an active session; notification **Stop** stops the session.
+- Placement is persisted on committed moves/docks and survives Activity recreation and process restart. The restored process remains hidden/stopped until reveal; the saved dock/position then reappears. Notification **Show** restores/expands the control state without stopping an active session and persists notification-driven undocking even with no attached overlay; notification **Stop** stops the session. The final-fix receiver regressions cover this persistence path at SDK 35 and SDK 24, while independent scoped re-review and rebuilt-APK smoke remain pending.
 
 ## Fresh local verification — 2026-09-14T17:01Z–17:03Z
 
@@ -61,7 +93,7 @@ Task 8 tested `c22ed52829b85117f62ce2082b80861dfe18dd45` on owned `emulator-5580
 
 The original sensor-interference right-undock claim was withdrawn and is not used as current evidence. The API 36 `run-as ... am start` path was rejected by the platform package/UID restriction; actual focused sample navigation completed both forward Activity scenarios without a security bypass.
 
-**Limits:** this is emulator-only validation, not physical-device validation; it validates targetSdk 35 at runtime API 36, not a targetSdk 36 build. Robolectric did not run SDK 36 on JDK 17. Task 8’s separate channel-block result is supplemental evidence, not an extra matrix row.
+**Limits:** this is emulator-only validation, not physical-device validation; it validates targetSdk 35 at runtime API 36, not a targetSdk 36 build. Robolectric did not run SDK 36 on JDK 17. Task 8’s separate channel-block result is supplemental evidence, not an extra matrix row. The final reviewer additionally noted that a focused automated assertion of captured-view/canvas coordinate equivalence under a deliberately nonzero window origin was not demonstrated; this is a coverage limitation, not another blocking finding.
 
 ## Artifact-level release exclusion evidence
 
@@ -86,6 +118,8 @@ The Task 8 tested/installed debug container remains `c8c9612bc27096dbf3de63ecee5
 - `c22ed52 test: exercise inspector in edge to edge sample screens`
 - `4bc7ea2 docs: complete Android16 inspector verification`
 - `ba51153 docs: close Task8 verification gaps`
+- `ff3e219 docs: record floating inspector completion evidence`
+- `847a4d1 docs: relocate Task 9 audit evidence` — current committed HEAD at this status refresh.
 
 ## Appendix: SDD rulings from `progress.md`
 

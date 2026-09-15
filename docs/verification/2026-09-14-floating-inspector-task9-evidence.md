@@ -1,6 +1,8 @@
 # Task 9 report — final verification and hygiene
 
-**Result:** `DONE_WITH_CONCERNS` — fresh gates pass and no new production defect was found. This is a candidate completion report, pending independent whole-branch review and coordinator rerun.
+**Historical scope:** This audit records the Task 9 candidate committed as `ff3e219`. Its permanent copy was subsequently relocated from `.superpowers/sdd/2026-09-14-inspector-floating-control/task-9-report.md` to this `docs/verification/` path by `847a4d1`; the local SDD copy remains ignored. The result and gate statements below describe that earlier candidate, not the latest whole-branch verdict. For current status, including the completed coordinator verification/smoke and the implemented final-fix persistence correction pending independent scoped re-review, see `docs/verification/2026-09-14-floating-inspector-completion.md`.
+
+**Result at the original candidate revision:** `DONE_WITH_CONCERNS` — fresh gates pass and no new production defect was found by the Task 9 worker. At that point, independent whole-branch review and coordinator rerun were pending.
 
 ## Fresh commands and exit status
 
@@ -10,7 +12,7 @@
 | `./gradlew :inspector:lintDebug :sample:lintDebug` | 0 | `BUILD SUCCESSFUL in 788ms`; 66 actionable tasks, 2 executed. |
 | `./gradlew :sample:assembleRelease` | 0 | `BUILD SUCCESSFUL in 658ms`; 47 actionable tasks, 1 executed. |
 
-Full stdout/stderr is saved in ignored scratch as `task-9-full-gate.log`, `task-9-lint.log`, and `task-9-release.log` under this SDD directory.
+Full stdout/stderr is saved in ignored scratch as `task-9-full-gate.log`, `task-9-lint.log`, and `task-9-release.log` under `.superpowers/sdd/2026-09-14-inspector-floating-control/`.
 
 ## Parsed unit-test XML
 
@@ -45,11 +47,11 @@ The reconciled Task 8 report at production revision `c22ed52` records 18/18 PASS
 
 See `docs/verification/2026-09-14-floating-inspector-completion.md` for the complete state model, Show/Stop/Hide distinctions, device matrix summary, all SDD rulings, paths, and full limits.
 
-## Commit scope
+## Original commit scope (`ff3e219`)
 
-This report and the candidate completion document are the only intended Task 9 commit files:
+The following are the historical paths in `ff3e219`, not current commit candidates. Commit `847a4d1` subsequently moved the second path to `docs/verification/2026-09-14-floating-inspector-task9-evidence.md`; the final tree does not track `.superpowers/` scratch.
 
 - `docs/verification/2026-09-14-floating-inspector-completion.md`
 - `.superpowers/sdd/2026-09-14-inspector-floating-control/task-9-report.md`
 
-The ignored `task-9-final-evidence.json` is deliberately excluded from the commit.
+The ignored `.superpowers/sdd/2026-09-14-inspector-floating-control/task-9-final-evidence.json` was deliberately excluded from the commit and remains local evidence.
