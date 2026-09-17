@@ -60,6 +60,7 @@ class InspectorOverlay(
         onHideRequested = {
             if (NotificationTrigger.isRecoveryAvailable(context)) InspectorController.hideControls()
         }
+        onNotificationControlsRequested = { NotificationTrigger.openNotificationControls(context) }
         onExpandRequested = { InspectorController.expandControls() }
         onCollapseRequested = { InspectorController.collapseControls() }
         onUndockRequested = { InspectorController.undockControls() }

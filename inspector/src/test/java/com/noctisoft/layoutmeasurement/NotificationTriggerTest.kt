@@ -3,7 +3,11 @@ package com.noctisoft.layoutmeasurement
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import android.provider.Settings
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -63,6 +67,44 @@ class NotificationTriggerTest {
         Shadows.shadowOf(manager).setNotificationsEnabled(false)
 
         assertFalse(NotificationTrigger.isRecoveryAvailable(context))
+    }
+
+    @Test
+    fun `notification controls opens this inspector channel only on explicit request`() {
+        val context = RuntimeEnvironment.getApplication()
+
+        NotificationTrigger.openNotificationControls(context)
+
+        val intent = Shadows.shadowOf(context).nextStartedActivity
+        assertEquals(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS, intent.action)
+        assertEquals(context.packageName, intent.getStringExtra(Settings.EXTRA_APP_PACKAGE))
+        assertEquals("layout_inspector", intent.getStringExtra(Settings.EXTRA_CHANNEL_ID))
+        assertTrue(intent.flags and Intent.FLAG_ACTIVITY_NEW_TASK != 0)
+    }
+
+    @Test
+    @Config(sdk = [24], application = Application::class)
+    fun `notification controls uses app settings fallback on API 24`() {
+        val context = RuntimeEnvironment.getApplication()
+
+        NotificationTrigger.openNotificationControls(context)
+
+        val intent = Shadows.shadowOf(context).nextStartedActivity
+        assertEquals(Settings.ACTION_APP_NOTIFICATION_SETTINGS, intent.action)
+        assertEquals(context.packageName, intent.getStringExtra(Settings.EXTRA_APP_PACKAGE))
+        assertEquals(context.packageName, intent.getStringExtra("app_package"))
+        assertEquals(context.applicationInfo.uid, intent.getIntExtra("app_uid", -1))
+    }
+
+    @Test
+    fun `unavailable notification settings activity is logged without crashing`() {
+        val context = object : ContextWrapper(RuntimeEnvironment.getApplication()) {
+            override fun startActivity(intent: Intent) {
+                throw ActivityNotFoundException(intent.action)
+            }
+        }
+
+        NotificationTrigger.openNotificationControls(context)
     }
 
     @Test

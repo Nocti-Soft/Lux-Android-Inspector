@@ -1,15 +1,18 @@
 package com.noctisoft.layoutmeasurement
 
 import android.app.Application
+import android.graphics.Color
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.core.view.ViewCompat
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -50,15 +53,13 @@ class FloatingInspectorControlTest {
 
         val initialCircle = circle(control)
         val initialMenu = menu(control)
-        assertTrue(initialMenu.x + initialMenu.width <= initialCircle.x - 8)
+        assertInsideAndSeparate(initialMenu, initialCircle, 500, 800)
 
         control.setSafeArea(SafeArea(0, 0, 320, 500))
         layout(control, 320, 500)
         val resizedCircle = circle(control)
         val resizedMenu = menu(control)
-        assertTrue(resizedMenu.x >= 0)
-        assertTrue(resizedMenu.x + resizedMenu.width <= 320)
-        assertTrue(resizedMenu.x + resizedMenu.width <= resizedCircle.x - 8)
+        assertInsideAndSeparate(resizedMenu, resizedCircle, 320, 500)
     }
 
     @Test
@@ -141,30 +142,75 @@ class FloatingInspectorControlTest {
     }
 
     @Test
-    fun `mode hide settings and stop buttons invoke their callbacks`() {
-        val control = visibleControl(FloatingControlState.EXPANDED, active = true, canHide = true)
+    fun `circle keeps a stable action and indigo target while state is exposed separately`() {
+        val control = visibleControl(FloatingControlState.COLLAPSED, active = false)
+        val circle = circle(control)
+        val idleBackground = circle.background
+
+        assertEquals("Layout inspector controls", circle.contentDescription)
+        assertEquals("Inspector idle", ViewCompat.getStateDescription(circle))
+        assertNotNull(circle.compoundDrawablesRelative[0])
+
+        control.render(FloatingControlState.COLLAPSED, FloatingPlacement(), MeasureMode.GAP, true, true)
+
+        assertEquals("Layout inspector controls", circle.contentDescription)
+        assertEquals("Inspector active: Gap", ViewCompat.getStateDescription(circle))
+        assertEquals(idleBackground.constantState, circle.background.constantState)
+    }
+
+    @Test
+    fun `quick menu uses readable native styled rows with semantic icons`() {
+        val control = visibleControl(FloatingControlState.EXPANDED)
+
+        listOf("Size", "Gap", "Ruler", "Bounds", "Settings", "Start Inspector").forEach { label ->
+            val button = button(control, label)
+            assertTrue(button.textSize >= 14f)
+            assertTrue(button.minimumHeight >= (48 * button.resources.displayMetrics.density).toInt())
+            assertEquals(Color.WHITE, button.currentTextColor)
+            assertNotNull(button.compoundDrawablesRelative[0])
+            assertNull(button.backgroundTintList)
+            assertNull(button.stateListAnimator)
+        }
+    }
+
+    @Test
+    fun `quick menu keeps modes then settings and a final start or stop action`() {
+        val control = visibleControl(FloatingControlState.EXPANDED, active = false, canHide = true)
         val selected = mutableListOf<MeasureMode>()
-        var hidden = 0
-        var stopped = 0
         control.onModeSelected = { selected += it }
+
+        assertEquals(
+            listOf("Size", "Gap", "Ruler", "Bounds", "Settings", "Start Inspector"),
+            visibleButtonLabels(control),
+        )
+        button(control, "Start Inspector").performClick()
+        assertEquals(listOf(MeasureMode.SIZE), selected)
+
+        control.render(FloatingControlState.EXPANDED, FloatingPlacement(), MeasureMode.GAP, true, true)
+        assertEquals(
+            listOf("Size", "Gap", "Ruler", "Bounds", "Settings", "Stop Inspector"),
+            visibleButtonLabels(control),
+        )
+    }
+
+    @Test
+    fun `settings keeps Hide recovery state and notification controls behind Back navigation`() {
+        val control = visibleControl(FloatingControlState.EXPANDED, canHide = false)
+        var hidden = 0
+        var notificationControls = 0
         control.onHideRequested = { hidden++ }
-        control.onStopRequested = { stopped++ }
+        control.onNotificationControlsRequested = { notificationControls++ }
 
-        assertEquals("• Size", button(control, "Size").text)
-        button(control, "Size").performClick()
-        button(control, "Gap").performClick()
-        button(control, "Ruler").performClick()
-        button(control, "Bounds").performClick()
-        button(control, "Hide Inspector").performClick()
         button(control, "Settings").performClick()
-        assertEquals(View.VISIBLE, button(control, "Back").visibility)
-        button(control, "Stop Inspector").performClick()
+        assertEquals(listOf("Back", "Hide (notification required)", "Notification Controls"), visibleButtonLabels(control))
+        val hide = button(control, "Hide (notification required)")
+        assertFalse(hide.isEnabled)
+        hide.performClick()
+        button(control, "Notification Controls").performClick()
+        assertEquals(0, hidden)
+        assertEquals(1, notificationControls)
         button(control, "Back").performClick()
-        assertEquals(View.VISIBLE, button(control, "Settings").visibility)
-
-        assertEquals(listOf(MeasureMode.SIZE, MeasureMode.GAP, MeasureMode.RULER, MeasureMode.BOUNDS), selected)
-        assertEquals(1, hidden)
-        assertEquals(1, stopped)
+        assertEquals(View.VISIBLE, button(control, "Start Inspector").visibility)
     }
 
     @Test
@@ -259,16 +305,16 @@ class FloatingInspectorControlTest {
         layout(control, 200, 160)
         val scroll = find(control) { it is ScrollView } as ScrollView
         val panel = scroll.getChildAt(0)
-        var hidden = 0
-        control.onHideRequested = { hidden++ }
+        var stopped = 0
+        control.onStopRequested = { stopped++ }
 
         scroll.scrollTo(0, panel.height)
         layout(control, 200, 160)
-        val finalAction = button(control, "Hide Inspector")
+        val finalAction = button(control, "Stop Inspector")
         assertTrue(scroll.scrollY > 0)
         assertTrue(finalAction.bottom - scroll.scrollY <= scroll.height)
         finalAction.performClick()
-        assertEquals(1, hidden)
+        assertEquals(1, stopped)
     }
 
     @Test
@@ -305,7 +351,31 @@ class FloatingInspectorControlTest {
         view.layout(0, 0, width, height)
     }
 
-    private fun circle(control: ViewGroup): TextView = find(control) { it is TextView && it.text == "◎" } as TextView
+    private fun circle(control: ViewGroup): TextView = find(control) {
+        it.javaClass == TextView::class.java && it.contentDescription == "Layout inspector controls"
+    } as TextView
+
+    private fun assertInsideAndSeparate(menu: View, circle: View, width: Int, height: Int) {
+        assertTrue(menu.x >= 0)
+        assertTrue(menu.y >= 0)
+        assertTrue(menu.x + menu.width <= width)
+        assertTrue(menu.y + menu.height <= height)
+        assertTrue(
+            menu.x + menu.width <= circle.x ||
+                circle.x + circle.width <= menu.x ||
+                menu.y + menu.height <= circle.y ||
+                circle.y + circle.height <= menu.y,
+        )
+    }
+
+    private fun visibleButtonLabels(control: ViewGroup): List<String> = buildList {
+        fun collect(view: View) {
+            if (view.visibility != View.VISIBLE) return
+            if (view is Button) add(view.text.toString())
+            if (view is ViewGroup) repeat(view.childCount) { collect(view.getChildAt(it)) }
+        }
+        collect(control)
+    }
 
     private fun menu(control: ViewGroup): ViewGroup = find(control) { it is ScrollView }?.parent as ViewGroup
 

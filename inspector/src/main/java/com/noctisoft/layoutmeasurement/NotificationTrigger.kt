@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -35,6 +36,22 @@ object NotificationTrigger {
         return manager.getNotificationChannel(CHANNEL_ID)?.importance?.let {
             it != NotificationManager.IMPORTANCE_NONE
         } == true
+    }
+
+    fun openNotificationControls(context: Context) {
+        val intent = if (android.os.Build.VERSION.SDK_INT >= 26) {
+            Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+                .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                .putExtra(Settings.EXTRA_CHANNEL_ID, CHANNEL_ID)
+        } else {
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                .putExtra("app_package", context.packageName)
+                .putExtra("app_uid", context.applicationInfo.uid)
+        }.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { context.startActivity(intent) }.onFailure {
+            Log.w("LayoutInspector", "Notification settings are unavailable", it)
+        }
     }
 
     fun show(context: Context) {

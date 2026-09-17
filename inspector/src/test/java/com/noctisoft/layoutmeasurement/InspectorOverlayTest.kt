@@ -66,6 +66,31 @@ class InspectorOverlayTest {
     }
 
     @Test
+    fun `Start resumes the retained mode and Stop clears selection while keeping the circle`() {
+        val fixture = overlay()
+        InspectorController.selectMode(MeasureMode.GAP)
+        InspectorController.stopInspection()
+        InspectorController.revealControls(RevealSource.SHAKE)
+
+        button(fixture.overlay, "Layout inspector controls").performClick()
+        button(fixture.overlay, "Start Inspector").performClick()
+        assertTrue(InspectorController.isActive)
+        assertEquals(MeasureMode.GAP, InspectorController.mode)
+        assertEquals(FloatingControlState.COLLAPSED, InspectorController.controlState)
+
+        InspectorController.selectMode(MeasureMode.SIZE)
+        canvas(fixture.overlay).dispatchTouchEvent(event(MotionEvent.ACTION_DOWN, 20f, 20f))
+        assertNotNull(privateField(canvas(fixture.overlay), "selectedA"))
+        button(fixture.overlay, "Layout inspector controls").performClick()
+        button(fixture.overlay, "Stop Inspector").performClick()
+
+        assertFalse(InspectorController.isActive)
+        assertEquals(FloatingControlState.COLLAPSED, InspectorController.controlState)
+        assertEquals(null, privateField(canvas(fixture.overlay), "selectedA"))
+        assertEquals(View.VISIBLE, controls(fixture.overlay).visibility)
+    }
+
+    @Test
     fun `drag dock and tap undock commit placement to the attached store`() {
         val fixture = overlay()
         val control = controls(fixture.overlay)
@@ -175,6 +200,7 @@ class InspectorOverlayTest {
         )
         InspectorController.revealControls(RevealSource.SHAKE)
         button(fixture.overlay, "Layout inspector controls").performClick()
+        button(fixture.overlay, "Settings").performClick()
         fixture.overlay.onWindowFocusChanged(true)
         val hide = button(fixture.overlay, "Hide (notification required)") as Button
 

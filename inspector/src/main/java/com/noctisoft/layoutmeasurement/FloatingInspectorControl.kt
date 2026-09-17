@@ -2,9 +2,13 @@ package com.noctisoft.layoutmeasurement
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.ColorStateList
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.StateListDrawable
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -14,6 +18,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.core.view.ViewCompat
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 
@@ -21,6 +26,7 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
     var onModeSelected: (MeasureMode) -> Unit = {}
     var onStopRequested: () -> Unit = {}
     var onHideRequested: () -> Unit = {}
+    var onNotificationControlsRequested: () -> Unit = {}
     var onExpandRequested: () -> Unit = {}
     var onCollapseRequested: () -> Unit = {}
     var onUndockRequested: () -> Unit = {}
@@ -50,14 +56,11 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
         }
     }
     private val floatingButton = TextView(context).apply {
-        text = "◎"
         gravity = Gravity.CENTER
-        textSize = 22f
-        setTextColor(Color.WHITE)
-        background = GradientDrawable().apply {
-            shape = GradientDrawable.OVAL
-            setColor(Color.rgb(45, 45, 48))
-        }
+        background = indigoBackground(MEDIUM_INDIGO, dp(28), BRIGHT_INDIGO)
+        backgroundTintList = null
+        stateListAnimator = null
+        setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_inspector_target, 0, 0, 0)
         elevation = dp(8).toFloat()
         contentDescription = "Layout inspector controls"
         isClickable = true
@@ -65,16 +68,14 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
         setOnClickListener { activateFloatingButton() }
     }
     private lateinit var hideButton: Button
-    private lateinit var stopButton: Button
+    private lateinit var sessionButton: Button
     private lateinit var mainPanel: LinearLayout
     private lateinit var settingsPanel: LinearLayout
     private val modeButtons = linkedMapOf<MeasureMode, Button>()
     private val menu = SafeMenu(context).apply {
         visibility = GONE
-        background = GradientDrawable().apply {
-            cornerRadius = dp(12).toFloat()
-            setColor(Color.rgb(32, 32, 36))
-        }
+        background = roundedBackground(DEEP_INDIGO, dp(16))
+        elevation = dp(10).toFloat()
         setPadding(dp(8), dp(8), dp(8), dp(8))
         addView(ScrollView(context).apply { addView(buildPanels(context)) })
     }
@@ -91,7 +92,7 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
 
     fun setSafeArea(area: SafeArea) {
         safeArea = area
-        menu.setMaximumSize(area.width, area.height)
+        menu.setMaximumSize(area.width, (area.height - buttonSizePx - dp(8)).coerceAtLeast(0))
         if (!dragging) {
             applyButtonPosition()
             positionMenu()
@@ -115,10 +116,16 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
 
         hideButton.isEnabled = canHide
         hideButton.text = if (canHide) "Hide Inspector" else "Hide (notification required)"
-        stopButton.isEnabled = isActive
+        hideButton.contentDescription = hideButton.text
+        sessionButton.text = if (isActive) "Stop Inspector" else "Start Inspector"
+        sessionButton.contentDescription = sessionButton.text
+        sessionButton.setCompoundDrawablesRelativeWithIntrinsicBounds(if (isActive) R.drawable.ic_inspector_stop else R.drawable.ic_inspector_search, 0, 0, 0)
+        sessionButton.background = indigoBackground(if (isActive) RED_BADGE else MEDIUM_INDIGO, dp(10), BRIGHT_INDIGO)
+        sessionButton.backgroundTintList = null
+        ViewCompat.setStateDescription(floatingButton, if (isActive) "Inspector active: ${activeMode.label()}" else "Inspector idle")
         modeButtons.forEach { (mode, button) ->
-            val label = mode.name.lowercase().replaceFirstChar { it.uppercase() }
-            button.text = if (isActive && mode == activeMode) "• $label" else label
+            button.isSelected = isActive && mode == activeMode
+            button.text = mode.label()
         }
         if (!dragging) {
             dismissLayer.visibility = if (state == FloatingControlState.EXPANDED) VISIBLE else GONE
@@ -267,57 +274,142 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
         if (menu.visibility != VISIBLE || safeArea.width <= 0 || safeArea.height <= 0) return
         menu.measure(
             MeasureSpec.makeMeasureSpec(safeArea.width, MeasureSpec.AT_MOST),
-            MeasureSpec.makeMeasureSpec(safeArea.height, MeasureSpec.AT_MOST),
+            MeasureSpec.makeMeasureSpec((safeArea.height - buttonSizePx - dp(8)).coerceAtLeast(0), MeasureSpec.AT_MOST),
         )
         val gap = dp(8)
-        val buttonCenter = floatingButton.x + floatingButton.width / 2f
-        val safeCenter = (safeArea.left + safeArea.right) / 2f
-        val preferredX = if (buttonCenter >= safeCenter) floatingButton.x.roundToInt() - gap - menu.measuredWidth else floatingButton.x.roundToInt() + floatingButton.width + gap
-        val maxX = (safeArea.right - menu.measuredWidth).coerceAtLeast(safeArea.left)
-        val maxY = (safeArea.bottom - menu.measuredHeight).coerceAtLeast(safeArea.top)
-        menu.x = preferredX.coerceIn(safeArea.left, maxX).toFloat()
-        menu.y = floatingButton.y.roundToInt().coerceIn(safeArea.top, maxY).toFloat()
+        val horizontalRoom = safeArea.width - buttonSizePx - gap
+        if (menu.measuredWidth <= horizontalRoom) {
+            val placeButtonRight = renderedPlacement.xFraction >= 0.5f
+            floatingButton.x = (if (placeButtonRight) safeArea.right - buttonSizePx else safeArea.left).toFloat()
+            menu.x = (if (placeButtonRight) floatingButton.x.roundToInt() - gap - menu.measuredWidth else safeArea.left + buttonSizePx + gap).toFloat()
+            menu.y = floatingButton.y.roundToInt()
+                .coerceIn(safeArea.top, (safeArea.bottom - menu.measuredHeight).coerceAtLeast(safeArea.top))
+                .toFloat()
+        } else {
+            val placeButtonBottom = renderedPlacement.yFraction >= 0.5f
+            floatingButton.y = (if (placeButtonBottom) safeArea.bottom - buttonSizePx else safeArea.top).toFloat()
+            menu.x = floatingButton.x.roundToInt()
+                .coerceIn(safeArea.left, (safeArea.right - menu.measuredWidth).coerceAtLeast(safeArea.left))
+                .toFloat()
+            menu.y = (if (placeButtonBottom) safeArea.top else safeArea.top + buttonSizePx + gap).toFloat()
+        }
     }
 
     private fun showMainPanel() {
         settingsPanel.visibility = GONE
         mainPanel.visibility = VISIBLE
+        menu.background = roundedBackground(DEEP_INDIGO, dp(16))
+    }
+
+    private fun showSettingsPanel() {
+        mainPanel.visibility = GONE
+        settingsPanel.visibility = VISIBLE
+        menu.background = roundedBackground(SETTINGS_SURFACE, dp(16))
+        positionMenu()
     }
 
     private fun buildPanels(context: Context): FrameLayout = FrameLayout(context).apply {
         mainPanel = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            addView(modeButton("Size", MeasureMode.SIZE))
-            addView(modeButton("Gap", MeasureMode.GAP))
-            addView(modeButton("Ruler", MeasureMode.RULER))
-            addView(modeButton("Bounds", MeasureMode.BOUNDS))
-            addView(actionButton("Settings") { mainPanel.visibility = GONE; settingsPanel.visibility = VISIBLE; positionMenu() })
-            hideButton = actionButton("Hide Inspector") { onHideRequested() }
-            addView(hideButton)
+            addView(modeButton("Size", MeasureMode.SIZE, R.drawable.ic_inspector_size))
+            addView(modeButton("Gap", MeasureMode.GAP, R.drawable.ic_inspector_gap))
+            addView(modeButton("Ruler", MeasureMode.RULER, R.drawable.ic_inspector_ruler))
+            addView(modeButton("Bounds", MeasureMode.BOUNDS, R.drawable.ic_inspector_bounds))
+            addView(actionButton("Settings", R.drawable.ic_inspector_settings) { showSettingsPanel() })
+            addView(View(context).apply { background = roundedBackground(Color.argb(96, 255, 255, 255), 0) }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(1)).apply { setMargins(dp(8), dp(6), dp(8), dp(6)) })
+            sessionButton = actionButton("Start Inspector", R.drawable.ic_inspector_search) {
+                if (renderedIsActive) onStopRequested() else onModeSelected(renderedMode)
+            }
+            addView(sessionButton)
         }
         settingsPanel = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             visibility = GONE
-            stopButton = actionButton("Stop Inspector") { onStopRequested() }
-            addView(stopButton)
-            addView(actionButton("Back") { showMainPanel(); positionMenu() })
+            addView(settingsButton("Back", R.drawable.ic_inspector_back) { showMainPanel(); positionMenu() })
+            hideButton = settingsButton("Hide Inspector", R.drawable.ic_inspector_eye_off) {
+                if (renderedCanHide) onHideRequested()
+            }
+            addView(hideButton)
+            addView(settingsButton("Notification Controls", R.drawable.ic_inspector_bell) { onNotificationControlsRequested() })
         }
         addView(mainPanel)
         addView(settingsPanel)
     }
 
-    private fun modeButton(label: String, mode: MeasureMode): Button = actionButton(label) { onModeSelected(mode) }.also { modeButtons[mode] = it }
+    private fun modeButton(label: String, mode: MeasureMode, iconRes: Int): Button =
+        actionButton(label, iconRes) { onModeSelected(mode) }.also { modeButtons[mode] = it }
 
-    private fun actionButton(label: String, action: () -> Unit): Button = Button(context).apply {
+    private fun settingsButton(label: String, iconRes: Int, action: () -> Unit): Button =
+        actionButton(label, iconRes, action).apply {
+            background = indigoBackground(
+                normal = SETTINGS_ROW,
+                radius = dp(10),
+                selected = SETTINGS_PRESSED,
+                disabled = SETTINGS_DISABLED,
+                pressed = SETTINGS_PRESSED,
+            )
+            backgroundTintList = null
+            setTextColor(ColorStateList(arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf()), intArrayOf(DISABLED_TEXT, DEEP_INDIGO)))
+        }
+
+    private fun actionButton(label: String, iconRes: Int, action: () -> Unit): Button = Button(context).apply {
         text = label
         isAllCaps = false
-        textSize = 12f
-        setTextColor(Color.WHITE)
+        textSize = 14f
+        setTypeface(Typeface.DEFAULT, Typeface.BOLD)
+        minHeight = dp(48)
+        minimumHeight = dp(48)
+        gravity = Gravity.CENTER_VERTICAL
+        includeFontPadding = false
+        setPadding(dp(16), 0, dp(16), 0)
+        compoundDrawablePadding = dp(12)
+        setCompoundDrawablesRelativeWithIntrinsicBounds(iconRes, 0, 0, 0)
+        background = indigoBackground(MEDIUM_INDIGO, dp(10), BRIGHT_INDIGO)
+        backgroundTintList = null
+        stateListAnimator = null
+        setTextColor(ColorStateList(arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf()), intArrayOf(Color.argb(160, 255, 255, 255), Color.WHITE)))
         contentDescription = label
+        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            setMargins(0, dp(3), 0, dp(3))
+        }
         setOnClickListener { action() }
     }
 
+    private fun indigoBackground(
+        normal: Int,
+        radius: Int,
+        selected: Int,
+        disabled: Int = DISABLED_INDIGO,
+        pressed: Int = BRIGHT_INDIGO,
+    ): Drawable = StateListDrawable().apply {
+        addState(intArrayOf(-android.R.attr.state_enabled), roundedBackground(disabled, radius))
+        addState(intArrayOf(android.R.attr.state_pressed), roundedBackground(pressed, radius))
+        addState(intArrayOf(android.R.attr.state_selected), roundedBackground(selected, radius))
+        addState(intArrayOf(), roundedBackground(normal, radius))
+    }
+
+    private fun roundedBackground(color: Int, radius: Int): GradientDrawable = GradientDrawable().apply {
+        shape = GradientDrawable.RECTANGLE
+        cornerRadius = radius.toFloat()
+        setColor(color)
+    }
+
+    private fun MeasureMode.label(): String = name.lowercase().replaceFirstChar { it.uppercase() }
+
     private fun dp(value: Int): Int = (value * density).roundToInt()
+
+    private companion object {
+        const val DEEP_INDIGO = 0xFF25236D.toInt()
+        const val MEDIUM_INDIGO = 0xFF37358F.toInt()
+        const val BRIGHT_INDIGO = 0xFF4F46E5.toInt()
+        const val DISABLED_INDIGO = 0xFF4B4A70.toInt()
+        const val RED_BADGE = 0xFFD32F2F.toInt()
+        const val SETTINGS_SURFACE = 0xFFF7F7FF.toInt()
+        const val SETTINGS_ROW = 0xFFFFFFFF.toInt()
+        const val SETTINGS_PRESSED = 0xFFE5E3FF.toInt()
+        const val SETTINGS_DISABLED = 0xFFE8E8F0.toInt()
+        const val DISABLED_TEXT = 0xFF77758F.toInt()
+    }
 
     private class SafeMenu(context: Context) : FrameLayout(context) {
         private var maxWidth = 0

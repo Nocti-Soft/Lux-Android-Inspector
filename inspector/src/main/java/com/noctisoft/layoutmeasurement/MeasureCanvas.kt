@@ -23,13 +23,13 @@ internal class MeasureCanvas(context: Context) : View(context) {
 
     private val boundsPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = 2f
-        color = Color.rgb(255, 64, 129)
+        strokeWidth = 2f * density
+        color = Color.rgb(255, 0, 168)
     }
     private val allBoundsPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = 1f
-        color = Color.rgb(0, 176, 255)
+        strokeWidth = density
+        color = Color.rgb(0, 229, 255)
     }
     private val gapPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         strokeWidth = 3f
@@ -102,17 +102,19 @@ internal class MeasureCanvas(context: Context) : View(context) {
     }
 
     private fun drawSize(canvas: Canvas, node: CapturedNode) {
-        drawBounds(canvas, node.bounds, boundsPaint)
         val text = "${node.label}: ${Geometry.formatPx(node.bounds.width, density)} × " +
             Geometry.formatPx(node.bounds.height, density)
         drawLabel(canvas, text, node.bounds.left.toFloat(), max(node.bounds.top - 8, 40).toFloat())
+        drawBounds(canvas, node.bounds, boundsPaint)
     }
 
     private fun drawGap(canvas: Canvas) {
         val a = selectedA ?: return
-        drawBounds(canvas, a.bounds, boundsPaint)
-        val b = selectedB ?: return
-        drawBounds(canvas, b.bounds, boundsPaint)
+        val b = selectedB
+        if (b == null) {
+            drawBounds(canvas, a.bounds, boundsPaint)
+            return
+        }
         val horizontalGap = Geometry.horizontalGap(a.bounds, b.bounds)
         if (horizontalGap > 0) {
             val x1 = min(a.bounds.right, b.bounds.right).toFloat()
@@ -132,6 +134,7 @@ internal class MeasureCanvas(context: Context) : View(context) {
         if (horizontalGap == 0 && verticalGap == 0) {
             drawLabel(canvas, "overlapping (gap 0)", a.bounds.left.toFloat(), max(a.bounds.top - 8, 40).toFloat())
         }
+        SelectionOutlineRenderer.draw(canvas, listOf(a.bounds, b.bounds), density)
     }
 
     private fun drawRuler(canvas: Canvas) {
@@ -148,7 +151,11 @@ internal class MeasureCanvas(context: Context) : View(context) {
     }
 
     private fun drawBounds(canvas: Canvas, bounds: Bounds, paint: Paint) {
-        canvas.drawRect(bounds.left.toFloat(), bounds.top.toFloat(), bounds.right.toFloat(), bounds.bottom.toFloat(), paint)
+        if (paint === boundsPaint) {
+            SelectionOutlineRenderer.draw(canvas, bounds, density)
+        } else {
+            canvas.drawRect(bounds.left.toFloat(), bounds.top.toFloat(), bounds.right.toFloat(), bounds.bottom.toFloat(), paint)
+        }
     }
 
     private fun drawLabel(canvas: Canvas, text: String, x: Float, y: Float) {
