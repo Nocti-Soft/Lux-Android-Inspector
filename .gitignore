@@ -1,5 +1,6 @@
 .superpowers/
-
+.worktrees/
+docs/
 # Android
 build/
 .gradle/

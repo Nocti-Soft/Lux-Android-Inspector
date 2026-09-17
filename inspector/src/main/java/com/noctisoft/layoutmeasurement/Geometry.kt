@@ -12,7 +12,12 @@ data class Bounds(val left: Int, val top: Int, val right: Int, val bottom: Int) 
 
 enum class Source { XML, COMPOSE }
 
-data class CapturedNode(val label: String, val bounds: Bounds, val source: Source)
+data class CapturedNode @JvmOverloads constructor(
+    val label: String,
+    val bounds: Bounds,
+    val source: Source,
+    val colors: ComponentColors? = null,
+)
 
 object Geometry {
     fun horizontalGap(a: Bounds, b: Bounds): Int =

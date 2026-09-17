@@ -2,6 +2,7 @@ package com.noctisoft.layoutmeasurement
 
 import android.content.Context
 import android.os.Looper
+import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
 import androidx.core.graphics.Insets
@@ -18,6 +19,8 @@ class InspectorOverlay(
 
     private val canvas = MeasureCanvas(context)
     private val controls = FloatingInspectorControl(context)
+    private val colorPanel = ColorDetailsPanel(context)
+    private var renderedMode = InspectorController.mode
     private var lastSafeInsets = Insets.NONE
     private var observedPlacement = InspectorController.placement
     private var observedActive = InspectorController.isActive
@@ -42,7 +45,12 @@ class InspectorOverlay(
         tag = TAG
         setWillNotDraw(true)
         addView(canvas, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        addView(colorPanel, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.BOTTOM or Gravity.LEFT))
+        // Keep floating controls above the raised readout for both drawing and touch dispatch.
+        controls.elevation = 12 * resources.displayMetrics.density
         addView(controls, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        canvas.onColorNodeSelected = { node -> colorPanel.render(node) }
+        colorPanel.onDismissRequested = { canvas.clearSelection(); canvas.invalidate() }
         wireControlCallbacks()
         installInsetsListener()
         sync()
@@ -89,14 +97,22 @@ class InspectorOverlay(
 
     private fun updateSafeArea() {
         if (width == 0 || height == 0) return
-        controls.setSafeArea(
-            SafeArea(
-                left = lastSafeInsets.left,
-                top = lastSafeInsets.top,
-                right = width - lastSafeInsets.right,
-                bottom = height - lastSafeInsets.bottom,
-            ),
+        val safeArea = SafeArea(
+            left = lastSafeInsets.left,
+            top = lastSafeInsets.top,
+            right = width - lastSafeInsets.right,
+            bottom = height - lastSafeInsets.bottom,
         )
+        controls.setSafeArea(safeArea)
+        val density = resources.displayMetrics.density
+        val gap = (12 * density).toInt()
+        val panelWidth = (safeArea.width - gap * 2).coerceIn(0, (360 * density).toInt())
+        colorPanel.setMaximumSize(panelWidth, (safeArea.height - gap * 2).coerceAtLeast(0) / 2)
+        colorPanel.layoutParams = (colorPanel.layoutParams as LayoutParams).apply {
+            width = panelWidth
+            leftMargin = safeArea.left + gap
+            bottomMargin = lastSafeInsets.bottom + gap
+        }
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
@@ -129,6 +145,11 @@ class InspectorOverlay(
 
     private fun sync() {
         val active = InspectorController.isActive
+        val mode = InspectorController.mode
+        if (mode != renderedMode && (mode == MeasureMode.COLORS || renderedMode == MeasureMode.COLORS)) {
+            canvas.clearSelection()
+        }
+        renderedMode = mode
         canvas.visibility = if (active) VISIBLE else GONE
         if (pendingStopReset || !active) {
             canvas.clearSelection()

@@ -1,6 +1,6 @@
 package com.noctisoft.layoutmeasurement
 
-enum class MeasureMode { SIZE, GAP, RULER, BOUNDS }
+enum class MeasureMode { SIZE, GAP, RULER, BOUNDS, COLORS }
 
 enum class FloatingControlState {
     HIDDEN,

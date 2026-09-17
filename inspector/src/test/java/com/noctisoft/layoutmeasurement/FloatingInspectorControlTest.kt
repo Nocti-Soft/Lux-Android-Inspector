@@ -186,7 +186,7 @@ class FloatingInspectorControlTest {
     fun `quick menu uses readable native styled rows with semantic icons`() {
         val control = visibleControl(FloatingControlState.EXPANDED)
 
-        listOf("Size", "Gap", "Ruler", "Bounds", "Settings", "Start Inspector").forEach { label ->
+        listOf("Size", "Gap", "Ruler", "Bounds", "Colors", "Settings", "Start Inspector").forEach { label ->
             val button = button(control, label)
             assertTrue(button.textSize >= 14f)
             assertTrue(button.minimumHeight >= (48 * button.resources.displayMetrics.density).toInt())
@@ -204,7 +204,7 @@ class FloatingInspectorControlTest {
         control.onModeSelected = { selected += it }
 
         assertEquals(
-            listOf("Size", "Gap", "Ruler", "Bounds", "Settings", "Start Inspector"),
+            listOf("Size", "Gap", "Ruler", "Bounds", "Colors", "Settings", "Start Inspector"),
             visibleButtonLabels(control),
         )
         button(control, "Start Inspector").performClick()
@@ -212,7 +212,7 @@ class FloatingInspectorControlTest {
 
         control.render(FloatingControlState.EXPANDED, FloatingPlacement(), MeasureMode.GAP, true, true)
         assertEquals(
-            listOf("Size", "Gap", "Ruler", "Bounds", "Settings", "Stop Inspector"),
+            listOf("Size", "Gap", "Ruler", "Bounds", "Colors", "Settings", "Stop Inspector"),
             visibleButtonLabels(control),
         )
     }

@@ -40,7 +40,7 @@ class InspectorOverlayTest {
         val overlay = fixture.overlay
 
         assertEquals(InspectorOverlay.TAG, overlay.tag)
-        assertEquals(2, overlay.childCount)
+        assertEquals(3, overlay.childCount)
         assertEquals("MeasureCanvas", canvas(overlay).javaClass.simpleName)
         assertEquals("FloatingInspectorControl", controls(overlay).javaClass.simpleName)
         assertEquals(View.GONE, canvas(overlay).visibility)
@@ -262,7 +262,7 @@ class InspectorOverlayTest {
     }
 
     private fun canvas(overlay: InspectorOverlay): MeasureCanvas = overlay.getChildAt(0) as MeasureCanvas
-    private fun controls(overlay: InspectorOverlay): FloatingInspectorControl = overlay.getChildAt(1) as FloatingInspectorControl
+    private fun controls(overlay: InspectorOverlay): FloatingInspectorControl = overlay.getChildAt(2) as FloatingInspectorControl
     private fun button(root: View, label: String): View = find(root) {
         it.contentDescription == label || (it is Button && it.text == label)
     } ?: error("Missing control: $label")

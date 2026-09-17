@@ -13,6 +13,7 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 
 internal class MeasureCanvas(context: Context) : View(context) {
+    var onColorNodeSelected: (CapturedNode?) -> Unit = {}
     private val density = resources.displayMetrics.density
     private var nodes: List<CapturedNode> = emptyList()
     private var selectedA: CapturedNode? = null
@@ -50,16 +51,24 @@ internal class MeasureCanvas(context: Context) : View(context) {
         rulerStart = null
         rulerEnd = null
         nextIsA = true
+        onColorNodeSelected(null)
     }
 
-    private fun recapture() {
-        nodes = ViewCapture.captureAll(rootView)
+    private fun recapture(includeColors: Boolean = false) {
+        nodes = ViewCapture.captureAll(rootView, includeColors)
     }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (!InspectorController.isActive) return false
         when (InspectorController.mode) {
+            MeasureMode.COLORS -> if (event.action == MotionEvent.ACTION_DOWN) {
+                recapture(includeColors = true)
+                selectedA = Geometry.pickAt(nodes, event.x.toInt(), event.y.toInt())
+                selectedB = null
+                onColorNodeSelected(selectedA)
+                invalidate()
+            }
             MeasureMode.SIZE -> if (event.action == MotionEvent.ACTION_DOWN) {
                 recapture()
                 selectedA = Geometry.pickAt(nodes, event.x.toInt(), event.y.toInt())
@@ -94,6 +103,7 @@ internal class MeasureCanvas(context: Context) : View(context) {
     override fun onDraw(canvas: Canvas) {
         if (!InspectorController.isActive) return
         when (InspectorController.mode) {
+            MeasureMode.COLORS -> selectedA?.let { drawBounds(canvas, it.bounds, boundsPaint) }
             MeasureMode.SIZE -> selectedA?.let { drawSize(canvas, it) }
             MeasureMode.GAP -> drawGap(canvas)
             MeasureMode.RULER -> drawRuler(canvas)
@@ -115,13 +125,14 @@ internal class MeasureCanvas(context: Context) : View(context) {
             drawBounds(canvas, a.bounds, boundsPaint)
             return
         }
+        val labels = ArrayList<GapLabel>(2)
         val horizontalGap = Geometry.horizontalGap(a.bounds, b.bounds)
         if (horizontalGap > 0) {
             val x1 = min(a.bounds.right, b.bounds.right).toFloat()
             val x2 = max(a.bounds.left, b.bounds.left).toFloat()
             val y = (max(a.bounds.top, b.bounds.top) + min(a.bounds.bottom, b.bounds.bottom)) / 2f
             canvas.drawLine(x1, y, x2, y, gapPaint)
-            drawLabel(canvas, Geometry.formatPx(horizontalGap, density), (x1 + x2) / 2, y - 8)
+            labels.add(GapLabel(Geometry.formatPx(horizontalGap, density), (x1 + x2) / 2, y - 8))
         }
         val verticalGap = Geometry.verticalGap(a.bounds, b.bounds)
         if (verticalGap > 0) {
@@ -129,13 +140,17 @@ internal class MeasureCanvas(context: Context) : View(context) {
             val y2 = max(a.bounds.top, b.bounds.top).toFloat()
             val x = (max(a.bounds.left, b.bounds.left) + min(a.bounds.right, b.bounds.right)) / 2f
             canvas.drawLine(x, y1, x, y2, gapPaint)
-            drawLabel(canvas, Geometry.formatPx(verticalGap, density), x + 8, (y1 + y2) / 2)
+            labels.add(GapLabel(Geometry.formatPx(verticalGap, density), x + 8, (y1 + y2) / 2))
         }
         if (horizontalGap == 0 && verticalGap == 0) {
-            drawLabel(canvas, "overlapping (gap 0)", a.bounds.left.toFloat(), max(a.bounds.top - 8, 40).toFloat())
+            labels.add(GapLabel("overlapping (gap 0)", a.bounds.left.toFloat(), max(a.bounds.top - 8, 40).toFloat()))
         }
         SelectionOutlineRenderer.draw(canvas, listOf(a.bounds, b.bounds), density)
+        // Labels are the final foreground pass, above border cores and contrast halos.
+        labels.forEach { drawLabel(canvas, it.text, it.x, it.y) }
     }
+
+    private data class GapLabel(val text: String, val x: Float, val y: Float)
 
     private fun drawRuler(canvas: Canvas) {
         val start = rulerStart ?: return

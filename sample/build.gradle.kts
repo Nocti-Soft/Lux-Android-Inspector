@@ -33,4 +33,6 @@ dependencies {
     implementation(libs.compose.material3)
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
+    // Compile the Startup initializer call in debug-only color integration tests.
+    testImplementation(libs.androidx.startup)
 }

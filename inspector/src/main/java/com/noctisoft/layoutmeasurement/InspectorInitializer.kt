@@ -11,6 +11,7 @@ class InspectorInitializer : Initializer<Unit> {
             if (initializedApplication === app) return
             initializedApplication = app
         }
+        ComposeCapture.enableColorInspection()
         InspectorController.restorePlacement(InspectorPlacementStore(app).load())
         InspectorController.stopInspection()
         InspectorController.hideControlsForStartup()
