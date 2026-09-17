@@ -57,6 +57,20 @@ class MeasureCanvasRenderTest {
         listOf(bitmap.getPixel(1, 60), bitmap.getPixel(118, 60), bitmap.getPixel(60, 1), bitmap.getPixel(60, 118)).forEach {
             assertEquals(Color.rgb(255, 0, 168), it)
         }
+        listOf(bitmap.getPixel(5, 60), bitmap.getPixel(114, 60), bitmap.getPixel(60, 5), bitmap.getPixel(60, 114)).forEach {
+            assertEquals(Color.WHITE, it)
+        }
+    }
+
+    @Test
+    fun `partially offscreen bounds do not invent an outline at the viewport edge`() {
+        val bitmap = Bitmap.createBitmap(120, 120, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.BLACK) }
+
+        SelectionOutlineRenderer.draw(Canvas(bitmap), Bounds(-20, 20, 80, 100), 3f)
+
+        assertEquals(Color.BLACK, bitmap.getPixel(0, 60))
+        assertEquals(Color.rgb(255, 0, 168), bitmap.getPixel(79, 60))
+        assertEquals(Color.WHITE, bitmap.getPixel(85, 60))
     }
 
     @Test

@@ -8,7 +8,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.TextView
 import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -264,7 +263,9 @@ class InspectorOverlayTest {
 
     private fun canvas(overlay: InspectorOverlay): MeasureCanvas = overlay.getChildAt(0) as MeasureCanvas
     private fun controls(overlay: InspectorOverlay): FloatingInspectorControl = overlay.getChildAt(1) as FloatingInspectorControl
-    private fun button(root: View, label: String): View = find(root) { (it is TextView && it.contentDescription == label) || (it is Button && it.text == label) } ?: error("Missing control: $label")
+    private fun button(root: View, label: String): View = find(root) {
+        it.contentDescription == label || (it is Button && it.text == label)
+    } ?: error("Missing control: $label")
     private fun find(root: View, predicate: (View) -> Boolean): View? {
         if (predicate(root)) return root
         if (root !is ViewGroup) return null

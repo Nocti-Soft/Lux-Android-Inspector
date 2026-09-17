@@ -6,8 +6,8 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.ScrollView
-import android.widget.TextView
 import androidx.core.view.ViewCompat
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -60,6 +60,30 @@ class FloatingInspectorControlTest {
         val resizedCircle = circle(control)
         val resizedMenu = menu(control)
         assertInsideAndSeparate(resizedMenu, resizedCircle, 320, 500)
+    }
+
+    @Test
+    @Config(sdk = [35], qualifiers = "440dpi", application = Application::class)
+    fun `normal high density menu stays compact beside the existing circle position`() {
+        val control = FloatingInspectorControl(RuntimeEnvironment.getApplication())
+        val density = control.resources.displayMetrics.density
+        val placement = FloatingPlacement(744f / (1080 - 56 * density), 1403f / (2340 - 56 * density))
+        control.setSafeArea(SafeArea(0, 0, 1080, 2340))
+        control.render(FloatingControlState.COLLAPSED, placement, MeasureMode.SIZE, true, true)
+        layout(control, 1080, 2340)
+        val circle = circle(control)
+        val originalX = circle.x
+        val originalY = circle.y
+
+        control.render(FloatingControlState.EXPANDED, placement, MeasureMode.SIZE, true, true)
+        layout(control, 1080, 2340)
+        val menu = menu(control)
+
+        assertEquals(originalX, circle.x, 0f)
+        assertEquals(originalY, circle.y, 0f)
+        assertTrue(menu.width in (180 * density).toInt()..(220 * density).toInt())
+        assertTrue(menu.x + menu.width <= circle.x - (8 * density).toInt())
+        assertInsideAndSeparate(menu, circle, 1080, 2340)
     }
 
     @Test
@@ -148,8 +172,8 @@ class FloatingInspectorControlTest {
         val idleBackground = circle.background
 
         assertEquals("Layout inspector controls", circle.contentDescription)
+        assertTrue(circle is ImageButton)
         assertEquals("Inspector idle", ViewCompat.getStateDescription(circle))
-        assertNotNull(circle.compoundDrawablesRelative[0])
 
         control.render(FloatingControlState.COLLAPSED, FloatingPlacement(), MeasureMode.GAP, true, true)
 
@@ -351,9 +375,9 @@ class FloatingInspectorControlTest {
         view.layout(0, 0, width, height)
     }
 
-    private fun circle(control: ViewGroup): TextView = find(control) {
-        it.javaClass == TextView::class.java && it.contentDescription == "Layout inspector controls"
-    } as TextView
+    private fun circle(control: ViewGroup): View = find(control) {
+        it.contentDescription == "Layout inspector controls"
+    } ?: error("Missing floating inspector control")
 
     private fun assertInsideAndSeparate(menu: View, circle: View, width: Int, height: Int) {
         assertTrue(menu.x >= 0)

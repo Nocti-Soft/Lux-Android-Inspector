@@ -15,9 +15,10 @@ import android.view.View
 import android.view.ViewConfiguration
 import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
-import android.widget.TextView
 import androidx.core.view.ViewCompat
 import kotlin.math.hypot
 import kotlin.math.roundToInt
@@ -55,12 +56,13 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
             true
         }
     }
-    private val floatingButton = TextView(context).apply {
-        gravity = Gravity.CENTER
+    private val floatingButton = ImageButton(context).apply {
+        scaleType = ImageView.ScaleType.CENTER
+        setPadding(dp(16), dp(16), dp(16), dp(16))
+        setImageResource(R.drawable.ic_inspector_target)
         background = indigoBackground(MEDIUM_INDIGO, dp(28), BRIGHT_INDIGO)
         backgroundTintList = null
         stateListAnimator = null
-        setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_inspector_target, 0, 0, 0)
         elevation = dp(8).toFloat()
         contentDescription = "Layout inspector controls"
         isClickable = true
@@ -92,7 +94,7 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
 
     fun setSafeArea(area: SafeArea) {
         safeArea = area
-        menu.setMaximumSize(area.width, (area.height - buttonSizePx - dp(8)).coerceAtLeast(0))
+        menu.setMaximumSize(area.width.coerceAtMost(dp(216)), area.height)
         if (!dragging) {
             applyButtonPosition()
             positionMenu()
@@ -272,27 +274,47 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
 
     private fun positionMenu() {
         if (menu.visibility != VISIBLE || safeArea.width <= 0 || safeArea.height <= 0) return
-        menu.measure(
-            MeasureSpec.makeMeasureSpec(safeArea.width, MeasureSpec.AT_MOST),
-            MeasureSpec.makeMeasureSpec((safeArea.height - buttonSizePx - dp(8)).coerceAtLeast(0), MeasureSpec.AT_MOST),
-        )
         val gap = dp(8)
-        val horizontalRoom = safeArea.width - buttonSizePx - gap
-        if (menu.measuredWidth <= horizontalRoom) {
-            val placeButtonRight = renderedPlacement.xFraction >= 0.5f
-            floatingButton.x = (if (placeButtonRight) safeArea.right - buttonSizePx else safeArea.left).toFloat()
-            menu.x = (if (placeButtonRight) floatingButton.x.roundToInt() - gap - menu.measuredWidth else safeArea.left + buttonSizePx + gap).toFloat()
-            menu.y = floatingButton.y.roundToInt()
+        measureMenu(safeArea.height)
+        val buttonLeft = floatingButton.x.roundToInt()
+        val buttonTop = floatingButton.y.roundToInt()
+        val buttonRight = buttonLeft + buttonSizePx
+        val buttonBottom = buttonTop + buttonSizePx
+        val leftRoom = buttonLeft - safeArea.left - gap
+        val rightRoom = safeArea.right - buttonRight - gap
+        val preferLeft = renderedPlacement.xFraction >= 0.5f
+        val placeLeft = when {
+            preferLeft && menu.measuredWidth <= leftRoom -> true
+            !preferLeft && menu.measuredWidth <= rightRoom -> false
+            menu.measuredWidth <= leftRoom -> true
+            menu.measuredWidth <= rightRoom -> false
+            else -> null
+        }
+
+        if (placeLeft != null) {
+            menu.x = (if (placeLeft) buttonLeft - gap - menu.measuredWidth else buttonRight + gap).toFloat()
+            menu.y = buttonTop
                 .coerceIn(safeArea.top, (safeArea.bottom - menu.measuredHeight).coerceAtLeast(safeArea.top))
                 .toFloat()
-        } else {
-            val placeButtonBottom = renderedPlacement.yFraction >= 0.5f
-            floatingButton.y = (if (placeButtonBottom) safeArea.bottom - buttonSizePx else safeArea.top).toFloat()
-            menu.x = floatingButton.x.roundToInt()
-                .coerceIn(safeArea.left, (safeArea.right - menu.measuredWidth).coerceAtLeast(safeArea.left))
-                .toFloat()
-            menu.y = (if (placeButtonBottom) safeArea.top else safeArea.top + buttonSizePx + gap).toFloat()
+            return
         }
+
+        val aboveRoom = (buttonTop - safeArea.top - gap).coerceAtLeast(0)
+        val belowRoom = (safeArea.bottom - buttonBottom - gap).coerceAtLeast(0)
+        val placeAbove = aboveRoom >= belowRoom
+        measureMenu(if (placeAbove) aboveRoom else belowRoom)
+        menu.x = buttonLeft
+            .coerceIn(safeArea.left, (safeArea.right - menu.measuredWidth).coerceAtLeast(safeArea.left))
+            .toFloat()
+        menu.y = (if (placeAbove) buttonTop - gap - menu.measuredHeight else buttonBottom + gap).toFloat()
+    }
+
+    private fun measureMenu(maxHeight: Int) {
+        menu.measure(
+            MeasureSpec.makeMeasureSpec(safeArea.width.coerceAtMost(dp(216)), MeasureSpec.AT_MOST),
+            MeasureSpec.makeMeasureSpec(maxHeight.coerceAtLeast(0), MeasureSpec.AT_MOST),
+        )
+        menu.layout(menu.left, menu.top, menu.left + menu.measuredWidth, menu.top + menu.measuredHeight)
     }
 
     private fun showMainPanel() {
@@ -412,8 +434,8 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
     }
 
     private class SafeMenu(context: Context) : FrameLayout(context) {
-        private var maxWidth = 0
-        private var maxHeight = 0
+        private var maxWidth = Int.MAX_VALUE
+        private var maxHeight = Int.MAX_VALUE
 
         fun setMaximumSize(width: Int, height: Int) {
             maxWidth = width.coerceAtLeast(0)
@@ -422,9 +444,13 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
         }
 
         override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-            val width = if (maxWidth > 0) MeasureSpec.makeMeasureSpec(maxWidth, MeasureSpec.AT_MOST) else widthMeasureSpec
-            val height = if (maxHeight > 0) MeasureSpec.makeMeasureSpec(maxHeight, MeasureSpec.AT_MOST) else heightMeasureSpec
-            super.onMeasure(width, height)
+            super.onMeasure(capped(widthMeasureSpec, maxWidth), capped(heightMeasureSpec, maxHeight))
+        }
+
+        private fun capped(spec: Int, maximum: Int): Int {
+            val mode = MeasureSpec.getMode(spec)
+            val size = if (mode == MeasureSpec.UNSPECIFIED) maximum else MeasureSpec.getSize(spec).coerceAtMost(maximum)
+            return MeasureSpec.makeMeasureSpec(size, if (mode == MeasureSpec.UNSPECIFIED) MeasureSpec.AT_MOST else mode)
         }
     }
 }
