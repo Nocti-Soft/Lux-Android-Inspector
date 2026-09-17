@@ -1,5 +1,7 @@
 # Indigo inspector UI verification — 2026-09-17
 
+**Final status:** implementation and scoped independent review complete. Fresh full gate: 80 tests passed; actual API 36 gesture and three-button checks passed. Source `138f880`; changes remain on `ui/inspector-indigo-controls`, not `main`.
+
 ## Scope
 
 This recovery completes the approved indigo floating-inspector follow-up without changing measurement geometry or capture semantics.
@@ -28,7 +30,7 @@ Relevant recovery logs (untracked scratch evidence):
 
 The baseline device evidence did **not** reproduce a completely missing right side for an interior Size rectangle. It did reproduce a thin approximately two-physical-pixel outline. This work therefore does not claim an original missing-draw-call defect; it improves contrast, density behavior, edge rendering, and draw ordering.
 
-## Fresh full gate
+## Historical first-candidate full gate (6a9b441)
 
 Command:
 
@@ -77,6 +79,68 @@ The first device QA “no pink” result is not treated as renderer evidence: it
 | `:sample` | 3 | 0 | 0 | 0 |
 | **Total** | **80** | **0** | **0** | **0** |
 
-## Pending evidence
+## Final coordinator verification and independent signoff
 
-Fresh coordinator re-review and corrected device interaction/screenshots are pending for the fix-round commit. The coordinator's lint/release verification is also pending. These JVM/native-raster tests and debug assemblies are not an all-device or all-platform claim.
+**Status: complete and independently approved for local integration. Not merged or pushed.**
+
+Verified source: `138f8805edbe185cee84ab4c6b616c950ae66a61` on `ui/inspector-indigo-controls`. The final report commit is documentation-only; all execution evidence is pinned to this source revision.
+
+The independent scoped re-review completed at `2026-09-17T03:03:25.295482+00:00`. The centered-icon finding, compactness/anchoring finding, and edge-halo test-coverage finding were all **ADDRESSED**. **Ready to integrate: YES; 0 Critical, 0 Important, 0 Minor findings in the fix range.** Its runtime-evidence paragraph was written before the latest QA completed, so the coordinator evidence below supersedes that pending status without altering the independent review text.
+
+### Fresh full build, test, and lint gate
+
+```bash
+./gradlew :inspector:testDebugUnitTest :sample:testDebugUnitTest \
+  :inspector:assembleDebug :sample:assembleDebug :sample:assembleRelease \
+  :inspector:lintDebug :sample:lintDebug --rerun-tasks
+```
+
+**BUILD SUCCESSFUL in 23s; 157 actionable tasks, all executed.**
+
+| Module | Tests | Failures | Errors | Skipped |
+| --- | ---: | ---: | ---: | ---: |
+| Inspector | 77 | 0 | 0 | 0 |
+| Sample | 3 | 0 | 0 | 0 |
+| Total | 80 | 0 | 0 | 0 |
+
+Inspector/sample debug assembly, sample release assembly, and lint succeeded. Lint records **0 errors and 33 warnings** (22 inspector, 11 sample), not a warning-free result. Two inspector `InlinedApi` warnings concern guarded notification-settings fallback String constants; their dispatch and unavailable-activity behavior are covered by API 24 tests and were reviewed. The other warning categories are retained in the verification JSON. No SDK/toolchain or runtime-dependency upgrade was performed.
+
+Debug and release dependency graphs and actual DEX inspection confirm inspector classes present in debug and absent from release. `git diff --check` passed; no tracked `.superpowers` paths or new system-overlay/service declarations were found.
+
+Evidence: `.superpowers/sdd/2026-09-16-inspector-indigo-ui/verification-20260917T030013Z/result.json` and adjacent command logs (see also `verification-latest.json` in this follow-up's scratch directory).
+
+### Actual Android 16 gesture-navigation verification
+
+Emulator: `emulator-5582`, Android API 36, 1080x2340, 440dpi, 16 KiB pages; the sample remains **targetSdk 35**.
+
+Corrected latest-APK QA completed at `2026-09-17T03:03:46.910910+00:00` with **PASS** for hidden startup, shake reveal/drag, ordered Start/Stop quick menu with no Hide row, Start, Stop returning to idle, Settings Hide, hidden measurement continuity with shake ignored, notification restoration, native channel-settings launch, and compact anchoring.
+
+- Collapsed and expanded circle bounds both equal `[744, 1404, 898, 1558]`: expansion no longer relocates it.
+- Quick-menu row width is `550`px, inside the 216dp nominal popup including its padding.
+- For Size and each of the two Gap selections, sampled magenta coverage was **100% along all four straight sides**, including right; the core was approximately **6 physical pixels** at this emulator density. Corner pixels are excluded from the straight-side metric. White-halo and viewport-edge raster assertions are covered separately by native graphics tests.
+- The coordinator visually inspected actual screenshots: the circle target is centered; indigo controls have legible white icons/text; the selected rectangle is visibly closed; Settings has the approved light treatment.
+- Channel settings was validated by the actual Android `ChannelNotificationSettings` fragment and visible Show notifications control, not by assuming the title must appear in the accessibility tree.
+
+Exact debug APK SHA-256: `34f7bf6314a81f4f01ca572e6e575b11e3dd6905dc878571d320f4679d85b271`.
+
+Evidence directory: `.superpowers/sdd/2026-09-16-inspector-indigo-ui/device/verification-20260917T030055Z`. Key PNGs: `after-quick-idle.png`, `after-quick-active.png`, `after-outline-quick.png`, `after-settings-active.png`, `after-gap-outline.png`. XML/node dumps and the command transcript are retained alongside them; `tested.apk` is a snapshot of the exact installed artifact.
+
+Earlier QA runs are historical and not counted as final failures or passes: a hardcoded dismissal point hit Stop in the then-full-width menu; a zero-distance drag became a tap; a title check incorrectly failed on a successfully opened native settings page. Each was diagnosed against actual state, the script was corrected, and the complete final flow was rerun. The actual full-width and off-center-icon production defects were fixed rather than hidden by the script changes.
+
+### Three-button navigation regression
+
+A second targeted run completed at `2026-09-17T03:05:38.143069+00:00` with **3/3 checks passed**: bottom quick-menu safety, Settings safety, and Back returning to the quick menu. The navigation bar begins at y=`2208`px; the circle ends at y=`2177`px and the lowest tested quick action at y=`2178`px. Both remain above the navigation area. Expanding retained the circle position.
+
+Evidence: `.superpowers/sdd/2026-09-16-inspector-indigo-ui/device/three-button-20260917T030446Z/result.json`, `window-insets.txt`, screenshots, and transcript.
+
+### Scope limits and retained behavior
+
+This is targeted emulator validation, not physical-device testing, targetSdk 36 validation, or exhaustive Android/OEM coverage. Viewport-edge core/halo and partial-offscreen cases are native Robolectric bitmap tests; the emulator pixel checks exercised fully visible sample controls. No claim is made that an absent right-side draw call was reproduced in the original APK.
+
+Start resumes the retained mode (Size by default); selecting a tool still starts/switches it directly. Deliberate Hide is Settings-only and notification-recoverable, and does not stop measurements. Settings replaces the quick panel within safe bounds rather than forcing the mockup's side-by-side submenu onto a narrow phone.
+
+### Implementation rulings
+
+1. Start uses the retained controller mode rather than introducing a separate idle-mode state. Cost if wrong: a user expecting a new default selection must choose that tool explicitly.
+2. Settings adapts in-place to available safe width. Cost if wrong: the submenu placement differs from the side-by-side mockup, while all requested actions remain available.
+3. A compact ordinary portrait popup must preserve the dragged circle position when there is space; constrained layouts scroll rather than teleport the circle. Cost if wrong: fallback placement can differ in unusually small windows; focused tests cover the retained safe-area and input contracts.
