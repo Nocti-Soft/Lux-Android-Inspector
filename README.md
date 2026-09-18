@@ -6,26 +6,13 @@ Android Layout Inspector is an in-app layout measurement library for Android Vie
 
 > **Debug builds only.** Add the inspector to the app you want to inspect. It is not a standalone tool for inspecting other installed apps, and it does not request permission to draw over other apps.
 >
-> **Distribution: source integration.** This repository does not currently configure artifact publication. The integration example below uses local source substitution—not a published Maven Central, GitHub Packages, or JitPack dependency.
+> **JitPack integration:** The instructions below describe installing this library from JitPack. **Publication setup is still pending in this checkout**; use a successfully built version once available, or use the [local source alternative](#alternative-integrate-from-local-source) in the meantime.
 
-[Try the sample](#try-the-sample) · [Integrate](#integrate-into-your-app) · [Compose support](#jetpack-compose-and-mixed-screens) · [Usage](#using-the-inspector) · [Troubleshooting](#troubleshooting)
+[JitPack integration](#integrate-into-your-app) · [Try the sample](#try-the-sample) · [Local source](#alternative-integrate-from-local-source) · [Compose support](#jetpack-compose-and-mixed-screens) · [Usage](#using-the-inspector) · [Troubleshooting](#troubleshooting)
 
 ## Preview
 
-<table>
-  <tr>
-    <th>Idle: Start Inspector</th>
-    <th>Active: measurement and Stop</th>
-    <th>Settings: Hide and notifications</th>
-  </tr>
-  <tr>
-    <td><img src="docs/images/inspector-idle.jpg" width="250" alt="Indigo inspector quick menu with a magnifying glass and Start Inspector action"></td>
-    <td><img src="docs/images/inspector-active.jpg" width="250" alt="Four-sided magenta selection outline, indigo tool menu, and Stop Inspector action"></td>
-    <td><img src="docs/images/inspector-settings.jpg" width="250" alt="Light inspector settings panel with Back, Hide Inspector, and Notification Controls"></td>
-  </tr>
-</table>
-
-Actual sample-app screenshots from Android 16 / API 36. The sample used `targetSdk 35`; these images are not a claim of compatibility with every device or target SDK.
+[Run the sample](#try-the-sample) to try the floating controls on XML, Compose, and mixed screens. Screenshots and historical verification notes under `docs/` are local development assets and are not included in the GitHub checkout.
 
 ## Features
 
@@ -83,61 +70,82 @@ Open **Inspector Sample**, allow its notification permission when prompted, and 
 
 ## Integrate into your app
 
-### 1. Include the source build
+### Before you start: choose a built version
 
-Keep a checkout of this repository beside your application:
+Open [Lux Android Inspector on JitPack](https://jitpack.io/#Nocti-Soft/Lux-Android-Inspector), look up the repository, and select a version whose build has succeeded. Confirm the dependency shown by **Get it**. Replace `<jitpack-version>` in the examples with that exact version, including a leading `v` when it is part of the tag. Pin a specific tag rather than a moving snapshot for shared development builds and CI.
 
-```text
-workspace/
-├── YourApp/
-│   ├── settings.gradle.kts
-│   └── app/
-└── AndroidLayoutInspector/
-    ├── settings.gradle.kts
-    ├── gradle/libs.versions.toml
-    ├── inspector/
-    └── sample/
-```
+**Current publication status:** this checkout does not yet apply `maven-publish` or include `jitpack.yml`, and no remote release tag was found when these instructions were updated. `<jitpack-version>` is deliberately a placeholder, not an available release. Adding the repository URL alone will not make this checkout resolvable; complete the [publisher setup](#publishing-on-jitpack-maintainers) first or use the [local source alternative](#alternative-integrate-from-local-source).
 
-Add this to your application's **`settings.gradle.kts`**, alongside its existing configuration:
+### 1. Add the JitPack repository
+
+Merge this into your application's root **`settings.gradle.kts`**, inside its existing `dependencyResolutionManagement` block. Keep your current repository policy and any other repositories. Do not add JitPack under `pluginManagement` or `buildscript`.
 
 ```kotlin
-includeBuild("../AndroidLayoutInspector") {
-    name = "layout-inspector-source"
-    dependencySubstitution {
-        substitute(module("com.noctisoft.local:layout-inspector"))
-            .using(project(":inspector"))
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven {
+            url = uri("https://jitpack.io")
+            content {
+                includeGroup("com.github.Nocti-Soft")
+                includeGroup("com.github.Nocti-Soft.Lux-Android-Inspector")
+            }
+        }
     }
 }
 ```
 
-This uses a [Gradle composite build](https://docs.gradle.org/current/userguide/composite_builds.html). Including the repository root lets the inspector keep its own build configuration and version catalog. Do not point `includeBuild` at the `inspector/` subdirectory.
-
-`com.noctisoft.local:layout-inspector` is only a **local substitution key**. It has no published version and must be used with the `includeBuild` block above. No extra Maven repository is needed for that key. Keep `google()` and `mavenCentral()` available to your application for the inspector's AndroidX dependencies.
+The content filter limits JitPack lookups to this publisher's repository coordinate and this repository's module coordinates. Keep `google()` and `mavenCentral()` for AndroidX and other dependencies. See [JitPack's Android installation guide](https://docs.jitpack.io/android/).
 
 ### 2. Add the debug-only dependency
 
-In your application's **`app/build.gradle.kts`**:
+In your application's **`app/build.gradle.kts`**, replace the version placeholder before syncing:
 
 ```kotlin
 dependencies {
-    debugImplementation("com.noctisoft.local:layout-inspector")
+    debugImplementation("com.github.Nocti-Soft:Lux-Android-Inspector:<jitpack-version>")
 }
 ```
+
+This is the intended repository-level coordinate. For a multi-module publication exposing the library as `inspector`, the module-specific form is `com.github.Nocti-Soft.Lux-Android-Inspector:inspector:<jitpack-version>`. Use the form confirmed by the successful JitPack build, and add **only one** dependency. Do not depend on the `sample` application. JitPack documents both forms in its [multi-module publishing guide](https://docs.jitpack.io/building/#multi-module-projects).
+
+**Keep `debugImplementation`, not `implementation` or `releaseImplementation`.** It keeps the inspector out of your application's release dependency graph. A library AAR built from a publisher's `release` variant is still a debug-only tool in the consuming app; it is not a no-op release dependency. Do not add an `@aar` suffix or disable transitive dependencies: the published dependency metadata must supply the inspector's AndroidX dependencies.
 
 Do not change your app's `applicationId` or namespace to the inspector's package. The initializer uses the **host application's ID** for its provider authority, and notifications belong to the host app.
 
-The existing [sample module](sample/build.gradle.kts) lives in the same multi-module build as the library, so it uses this form instead:
+JitPack consumers do not need `includeBuild`, a local inspector checkout, or `debugImplementation(project(":inspector"))`. Remove the old local inspector dependency/substitution when switching to JitPack, then sync Gradle. For custom development build types, scope the dependency to those configurations explicitly and verify that production variants do not inherit it.
 
-```kotlin
-dependencies {
-    debugImplementation(project(":inspector"))
+<details>
+<summary>Groovy DSL equivalent</summary>
+
+In the application's root `settings.gradle`:
+
+```groovy
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven {
+            url = uri('https://jitpack.io')
+            content {
+                includeGroup 'com.github.Nocti-Soft'
+                includeGroup 'com.github.Nocti-Soft.Lux-Android-Inspector'
+            }
+        }
+    }
 }
 ```
 
-Use the project form only when `:inspector` is actually a subproject of your build. Simply pointing a new subproject at this repository's module also requires reconciling its `libs` catalog and plugin aliases with the host build; the composite approach avoids that step.
+In `app/build.gradle`, after replacing the version placeholder:
 
-**Custom variants and CI:** explicitly scope the dependency to the intended development variants. A consumer with a nonstandard build type may need a matching fallback to the library's `debug` variant. Ensure CI checks out the inspector at the same relative path, pinned to a chosen commit or tag. The consumer's Gradle invocation runs the composite, so check toolchain and resolved dependency compatibility before adopting it in a different build.
+```groovy
+dependencies {
+    debugImplementation 'com.github.Nocti-Soft:Lux-Android-Inspector:<jitpack-version>'
+}
+```
+
+</details>
 
 ### 3. Initialization is automatic
 
@@ -197,9 +205,63 @@ Build both consumer variants:
 ./gradlew :app:dependencies --configuration releaseRuntimeClasspath
 ```
 
-The substituted inspector project must appear in the debug runtime graph and **not** in the release graph. Check the release APK and merged manifest as well: inspector classes, its initializer metadata, and its action receiver must be absent. Do not remove a shared AndroidX Startup provider or notification permission if another release dependency legitimately needs it.
+The inspector dependency—either the JitPack artifact or the substituted local project—must appear in the debug runtime graph and **not** in the release graph. Check the release APK and merged manifest as well: inspector classes, its initializer metadata, and its action receiver must be absent. Do not remove a shared AndroidX Startup provider or notification permission if another release dependency legitimately needs it.
 
-Keep inspector imports in `src/debug`. Wrapping an inspector reference in `if (BuildConfig.DEBUG)` inside `src/main` is not enough: the release compiler still needs to resolve that reference. Use variant-specific wrappers with release no-ops when shared code needs a debug hook. No release/no-op inspector artifact is provided.
+Keep inspector imports in `src/debug`. Wrapping an inspector reference in `if (BuildConfig.DEBUG)` inside `src/main` is not enough: the release compiler still needs to resolve that reference. Use variant-specific wrappers with release no-ops when shared code needs a debug hook. No no-op inspector artifact is provided for host release builds.
+
+### Alternative: integrate from local source
+
+Use this route before the first JitPack release, or when developing the inspector locally. Choose either this source substitution or the JitPack dependency above, not both. Clone the repository into a directory named `AndroidLayoutInspector` to match these paths, and keep it beside your application:
+
+```text
+workspace/
+├── YourApp/
+│   ├── settings.gradle.kts
+│   └── app/
+└── AndroidLayoutInspector/
+    ├── settings.gradle.kts
+    ├── gradle/libs.versions.toml
+    ├── inspector/
+    └── sample/
+```
+
+Add this to your application's **`settings.gradle.kts`**, alongside its existing configuration:
+
+```kotlin
+includeBuild("../AndroidLayoutInspector") {
+    name = "layout-inspector-source"
+    dependencySubstitution {
+        substitute(module("com.noctisoft.local:layout-inspector"))
+            .using(project(":inspector"))
+    }
+}
+```
+
+This uses a [Gradle composite build](https://docs.gradle.org/current/userguide/composite_builds.html). Including the repository root lets the inspector keep its own build configuration and version catalog. Do not point `includeBuild` at the `inspector/` subdirectory.
+
+`com.noctisoft.local:layout-inspector` is only a **local substitution key**. It has no published version and must be used with the `includeBuild` block above. No extra Maven repository is needed for that key. Keep `google()` and `mavenCentral()` available to your application for the inspector's AndroidX dependencies.
+
+**Add the local debug dependency**
+
+In your application's **`app/build.gradle.kts`**:
+
+```kotlin
+dependencies {
+    debugImplementation("com.noctisoft.local:layout-inspector")
+}
+```
+
+The existing [sample module](sample/build.gradle.kts) lives in the same multi-module build as the library, so it uses this form instead:
+
+```kotlin
+dependencies {
+    debugImplementation(project(":inspector"))
+}
+```
+
+Use the project form only when `:inspector` is actually a subproject of your build. Simply pointing a new subproject at this repository's module also requires reconciling its `libs` catalog and plugin aliases with the host build; the composite approach avoids that step.
+
+**Custom variants and CI:** explicitly scope the dependency to the intended development variants. A consumer with a nonstandard build type may need a matching fallback to the library's `debug` variant. Ensure CI checks out the inspector at the same relative path, pinned to a chosen commit or tag. The consumer's Gradle invocation runs the composite, so check toolchain and resolved dependency compatibility before adopting it in a different build.
 
 ## Jetpack Compose and mixed screens
 
@@ -267,7 +329,10 @@ Position and dock side are saved across app restarts. The current tool/session i
 | A Compose element cannot be selected | Add a `Modifier.testTag` to the intended element, not only a parent or content description. Inspect the resolved Compose UI version if behavior changes after an upgrade. |
 | Taps do not activate the underlying app | An active measurement tool intercepts canvas touches. Stop inspection before normal interaction. |
 | A measurement no longer matches a moved element | The selection is a snapshot. Stop, change the UI, restart the tool, and select again. |
-| Gradle cannot resolve the local dependency | Check the checkout path, substitution key, and `:inspector` project mapping. It is not a published artifact to fetch from Maven. |
+| Gradle cannot resolve the JitPack dependency | Replace `<jitpack-version>` with an exact successfully built version; verify the dependency shown by JitPack, repository-name capitalization, and the repository/content filter in the consuming application's settings file. This checkout still needs publisher setup before its first release. |
+| JitPack reports a failed build or no artifacts | Check the selected version's JitPack build log and the publisher's Maven publication/JDK configuration. A Git tag alone does not create a usable library artifact when publishing is not configured. |
+| Duplicate inspector classes after switching to JitPack | Remove the previous local source/project dependency and its substitution. Keep just one integration route. |
+| Gradle cannot resolve the local source dependency | Check the checkout path, substitution key, and `:inspector` project mapping in the local source alternative. That substitution key is not a Maven artifact. |
 | A consumer build reports variant/toolchain conflicts | Compare the host build with the pinned versions above and inspect the resolved dependency graph. Custom build types need an appropriate variant match. |
 | Release compilation references missing inspector classes | Move those references out of `src/main` into `src/debug`, with release no-op wrappers where needed. |
 
@@ -288,9 +353,7 @@ Run the complete local verification command from the repository root:
 
 The tests cover geometry, controller state, placement persistence, floating-control interactions, overlay lifecycle behavior, notification handling, native outline rendering, and sample edge-to-edge setup. Consult the generated test and lint reports for current results; a successful build does not mean there are no warnings.
 
-[UI verification report](docs/verification/2026-09-17-inspector-indigo-ui.md) · [Independent review](docs/verification/2026-09-17-inspector-indigo-ui-review.md)
-
-Those reports describe their recorded revisions and test environments. They are historical evidence, not an assertion that every later checkout has been tested on a device.
+Historical UI and review reports are maintained locally under the ignored `docs/verification/` directory, not in the published GitHub checkout. They describe their recorded revisions and test environments, not the state of every later checkout. Run the checks above for the revision being released.
 
 ## Repository structure
 
@@ -300,9 +363,6 @@ sample/              XML, Compose, and mixed-screen demo
   src/main/          Sample app shared code
   src/test/          Sample edge-to-edge regression tests
 gradle/              Version catalog and Gradle wrapper
-docs/images/         README screenshots from the sample
-docs/verification/   Recorded verification and review reports
-docs/superpowers/    Design specifications and implementation plans
 ```
 
 ## Contributing
@@ -311,17 +371,14 @@ For a bug report, include the commit you tested, Android API level, device/emula
 
 Keep the inspector debug-only and its overlay inside the host app. Add regression coverage for behavior changes and run the checks above before proposing a change. Do not treat the pinned sample versions as a request to upgrade another application's toolchain.
 
-## Public GitHub publication checklist
+## Publishing on JitPack (maintainers)
 
-Before the first public push, the repository owner should:
+Consumer installation instructions do not configure publication. Before advertising a resolvable version, configure the `inspector` library with `maven-publish`, an Android software component, and a Maven publication carrying the AAR, sources, and dependency metadata. Publish the library only, not the sample APK. Configure Java 17 in a root `jitpack.yml` for this repository's AGP 8 build, and verify the Maven-local publication before creating a release. Follow [JitPack's Android publishing instructions](https://docs.jitpack.io/android/) and [Android's publishing-variant guide](https://developer.android.com/build/publish-library/configure-pub-variants).
 
-- Select a license and add the corresponding `LICENSE` file. This README does not assign a license.
-- Review tracked files **and Git history** for secrets, personal paths, private app screenshots, and internal notes. A new ignore rule does not remove files from earlier commits.
-- Exclude local worktrees, agent scratch, SDK settings, signing material, and build outputs. In particular, add `.worktrees/` to the ignore rules before broad staging; it is not covered by the current `.gitignore`. Avoid `git add .` until that review is complete.
-- Configure the intended GitHub remote and publish the reviewed branch. Document real artifact coordinates only after a package-publishing workflow and an actual release have been verified.
+After local tests, consumer debug/release isolation checks, and publication checks pass, commit the publishing configuration, push it, and create a new version tag on that commit. Request that version on JitPack, inspect its build log and published artifacts, and test installation from JitPack in a separate consumer. Only then replace the version placeholder and remove the pending-publication notices in this README. A successful local build is not proof that JitPack can serve the artifact.
 
-Creating this README does not create a GitHub repository, change repository visibility, publish a package, or push any commits.
+Keep `docs/`, `.worktrees/`, `.superpowers/`, SDK settings, signing material, and build outputs excluded from new commits. Review tracked files **and Git history** for private information before publishing; ignore rules do not erase previously committed documents. Do not stage local handoff notes or verification scratch.
 
 ## License
 
-No `LICENSE` file is currently included. A project license has not been declared in this checkout; no license badge or permission grant is implied by this README.
+See [LICENSE](LICENSE) for the Apache License, Version 2.0.

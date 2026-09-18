@@ -1,0 +1,8 @@
+jdk:
+  - openjdk17
+
+before_install:
+  - chmod +x ./gradlew
+
+install:
+  - ./gradlew :inspector:publishReleasePublicationToMavenLocal -PpublicationVersion="$VERSION" --no-daemon --stacktrace
