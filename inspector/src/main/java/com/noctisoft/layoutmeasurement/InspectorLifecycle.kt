@@ -3,38 +3,26 @@ package com.noctisoft.layoutmeasurement
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
-import android.view.ViewGroup
 
-/** Attaches/detaches the overlay and shake detector as activities resume/pause. */
+/** Tracks the active Activity and its modal windows without intercepting host callbacks. */
 object InspectorLifecycle : Application.ActivityLifecycleCallbacks {
-
     private val detectors = mutableMapOf<Activity, ShakeDetector>()
+    private val windows = mutableMapOf<Activity, InspectorWindowSession>()
 
     override fun onActivityResumed(activity: Activity) {
-        attachOverlay(activity)
-        // Re-post each resume: no-op if already shown; covers permission granted after init.
+        windows.remove(activity)?.stop()
+        windows[activity] = InspectorWindowSession(activity).also { it.start() }
+        // Re-post each resume: covers permission granted after initialization.
         NotificationTrigger.show(activity)
-        detectors.remove(activity)?.stop(activity) // defensive: never stack registrations
+        detectors.remove(activity)?.stop(activity)
         val detector = ShakeDetector { InspectorController.revealControls(RevealSource.SHAKE) }
         detectors[activity] = detector
         detector.start(activity)
     }
 
     override fun onActivityPaused(activity: Activity) {
+        windows.remove(activity)?.stop()
         detectors.remove(activity)?.stop(activity)
-    }
-
-    private fun attachOverlay(activity: Activity) {
-        val decor = activity.window.decorView as? ViewGroup ?: return
-        if (decor.findViewWithTag<android.view.View>(InspectorOverlay.TAG) != null) return
-        decor.addView(
-            InspectorOverlay(
-                context = activity,
-                placementStore = InspectorPlacementStore(activity.applicationContext),
-            ),
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
@@ -42,6 +30,7 @@ object InspectorLifecycle : Application.ActivityLifecycleCallbacks {
     override fun onActivityStopped(activity: Activity) = Unit
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
     override fun onActivityDestroyed(activity: Activity) {
+        windows.remove(activity)?.stop()
         detectors.remove(activity)?.stop(activity)
     }
 }

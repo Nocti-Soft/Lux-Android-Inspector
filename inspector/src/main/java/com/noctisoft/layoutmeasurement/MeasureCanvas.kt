@@ -55,7 +55,15 @@ internal class MeasureCanvas(context: Context) : View(context) {
     }
 
     private fun recapture(includeColors: Boolean = false) {
-        nodes = ViewCapture.captureAll(rootView, includeColors)
+        val origin = IntArray(2)
+        getLocationInWindow(origin)
+        nodes = ViewCapture.captureAll(rootView, includeColors).map { node ->
+            val b = node.bounds
+            node.copy(bounds = Bounds(
+                b.left - origin[0], b.top - origin[1],
+                b.right - origin[0], b.bottom - origin[1],
+            ))
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")

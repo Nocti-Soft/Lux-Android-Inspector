@@ -31,6 +31,8 @@ dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
+    // Sample-only dependency for the modal bottom-sheet showcase.
+    implementation(libs.material.views)
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     // Compile the Startup initializer call in debug-only color integration tests.

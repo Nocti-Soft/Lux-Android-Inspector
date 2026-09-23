@@ -57,6 +57,13 @@ class GeometryTest {
         assertEquals(inner, Geometry.pickAt(listOf(outer, inner), 60, 60))
     }
 
+    @Test fun `equal bounds prefer captured child over its ComposeView container`() {
+        val bounds = Bounds(20, 40, 240, 100)
+        val parent = CapturedNode("ComposeView", bounds, Source.XML)
+        val text = CapturedNode("sheet_compose_colors", bounds, Source.COMPOSE)
+        assertEquals(text, Geometry.pickAt(listOf(parent, text), 80, 70))
+    }
+
     @Test fun `pickAt returns null when nothing contains point`() {
         assertNull(Geometry.pickAt(listOf(node(0, 0, 10, 10)), 50, 50))
     }
