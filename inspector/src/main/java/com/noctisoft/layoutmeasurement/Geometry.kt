@@ -34,5 +34,6 @@ object Geometry {
     }
 
     fun pickAt(nodes: List<CapturedNode>, x: Int, y: Int): CapturedNode? =
-        nodes.filter { it.bounds.contains(x, y) }.minByOrNull { it.bounds.area }
+        // Capture visits parents before children; equal bounds should select the child.
+        nodes.asReversed().filter { it.bounds.contains(x, y) }.minByOrNull { it.bounds.area }
 }

@@ -56,6 +56,11 @@ class InspectorOverlay(
         sync()
     }
 
+    internal fun clearWindowSelection() {
+        canvas.clearSelection()
+        canvas.invalidate()
+    }
+
     private fun wireControlCallbacks() = with(controls) {
         onModeSelected = { mode ->
             InspectorController.selectMode(mode)

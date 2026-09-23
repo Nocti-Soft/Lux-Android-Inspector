@@ -10,5 +10,6 @@
         </activity>
         <activity android:name=".ComposeActivity" android:exported="false" />
         <activity android:name=".MixedActivity" android:exported="false" />
+        <activity android:name=".BottomSheetShowcaseActivity" android:theme="@style/Theme.Sample.BottomSheets" android:exported="false" />
     </application>
 </manifest>

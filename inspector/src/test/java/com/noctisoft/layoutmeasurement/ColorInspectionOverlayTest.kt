@@ -110,10 +110,11 @@ class ColorInspectionOverlayTest {
 
     private fun tapCanvas(overlay: InspectorOverlay) {
         val canvas = children(overlay).filterIsInstance<MeasureCanvas>().single()
-        // Convert the target's window coordinates to the existing full-window canvas convention.
+        // MotionEvent coordinates are local to the canvas, including in inset windows.
         val nodes = ViewCapture.captureAll(overlay.rootView)
         val bounds = nodes.first { it.label == "TextView" }.bounds
-        val event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_DOWN, (bounds.left + 5).toFloat(), (bounds.top + 5).toFloat(), 0)
+        val origin = IntArray(2).also(canvas::getLocationInWindow)
+        val event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_DOWN, (bounds.left - origin[0] + 5).toFloat(), (bounds.top - origin[1] + 5).toFloat(), 0)
         canvas.onTouchEvent(event)
         event.recycle()
     }

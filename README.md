@@ -68,6 +68,16 @@ On Windows, use `gradlew.bat` instead of `./gradlew`. With multiple devices conn
 
 Open **Inspector Sample**, allow its notification permission when prompted, and shake the device or tap its **Layout Inspector** notification. Tap the floating circle, then choose **Start Inspector** or a tool. The sample includes an XML screen, a Compose screen, and a mixed screen. Its application ID is `com.noctisoft.layoutmeasurement`.
 
+### Bottom-sheet showcase
+
+Open **Bottom sheet showcase** from the sample home screen. **Show XML bottom sheet** opens a Material `BottomSheetDialogFragment` with XML targets and a tagged Compose island. **Show Compose bottom sheet** opens a Compose Material 3 `ModalBottomSheet`. Neither example registers a dialog with the inspector.
+
+Reveal the controls through a shake or the inspector notification, open a sheet, and select Size, Gap, Bounds, or Colors. The two boxes are 100 × 48 dp with a 24 dp horizontal gap. Stop inspection before scrolling, dragging, or pressing **Close sheet**. Dismiss and reopen the sheet to check that one control remains and the selected tool and placement are retained.
+
+The overlay follows the active, focusable app-owned Activity/dialog window. It captures that window only and clears selections when changing windows. Nested dialogs return to the preceding window when dismissed. Window coordinates are converted into canvas-local coordinates; equal-size captures prefer children over containers.
+
+On API 29+, discovery uses [WindowInspector](https://developer.android.com/reference/android/view/inspector/WindowInspector). API 24–28 uses a guarded legacy lookup; OEM restrictions can cause Activity-only fallback with a `LayoutInspector` warning. There is no system-overlay permission or replacement of host window flags/listeners. Window checks run every 200 ms only while controls or measurement are in use in a resumed Activity, and stop on pause/destroy. Popups/subwindows, non-focusable windows, other apps, and system dialogs are not covered.
+
 ## Integrate into your app
 
 ### Before you start: choose a built version
@@ -149,7 +159,7 @@ dependencies {
 
 ### 3. Initialization is automatic
 
-The library [manifest](inspector/src/main/AndroidManifest.xml) registers [InspectorInitializer](inspector/src/main/java/com/noctisoft/layoutmeasurement/InspectorInitializer.kt) through [AndroidX App Startup](https://developer.android.com/topic/libraries/app-startup). It attaches an in-app overlay as Activities resume. No call from your `Application` and no per-screen overlay setup are required with the default manifest configuration.
+The library [manifest](inspector/src/main/AndroidManifest.xml) registers [InspectorInitializer](inspector/src/main/java/com/noctisoft/layoutmeasurement/InspectorInitializer.kt) through [AndroidX App Startup](https://developer.android.com/topic/libraries/app-startup). It attaches an in-app overlay as Activities resume and follows their active modal dialog windows while the inspector is in use. No call from your `Application` and no per-screen overlay setup are required with the default manifest configuration.
 
 Do not remove the initializer's manifest metadata or the Startup provider from the debug variant. If your app intentionally disables App Startup, reconcile that setup before expecting automatic activation.
 
@@ -311,10 +321,10 @@ Position and dock side are saved across app restarts. The current tool/session i
 
 ## Scope and limitations
 
-- **Host app only.** The overlay is attached to the current Activity's decor view. There is no system overlay service, accessibility service, root requirement, or inspection of other processes.
+- **Host app only.** The overlay is attached to the resumed Activity or its active app-owned modal dialog decor view. There is no system overlay service, accessibility service, root requirement, or inspection of other processes.
 - **Snapshot-based measurement.** Selection uses captured rectangles rather than continuous layout tracking. Stop to interact with or scroll the app, then start and select again after changes. Bounds mode recaptures on a tap.
 - **Rectangles, not rendered shapes.** Size, gap, and hit testing use axis-aligned bounds. Overlapping nodes are selected by the smallest captured area containing the tap. Offscreen geometry is clipped rather than replaced with an invented visible border.
-- **Compose tagging is required for element granularity.** Web content, custom drawing, and independent windows are not parsed into arbitrary UI elements by this implementation.
+- **Compose tagging is required for element granularity.** Tagged Compose nodes in supported dialogs are captured. Web content, custom drawing, popup/subwindows, and windows outside the host Activity are not parsed into arbitrary UI elements.
 - **No process-lifetime guarantee.** Hiding leaves the in-process inspection session active; it does not start a foreground service or keep the app alive after Android ends its process.
 - **Validation has a defined scope.** The recorded UI checks use an Android 16 / API 36 emulator with 16 KiB pages and the targetSdk 35 sample. Native Robolectric tests cover rendering and older-API paths. This is not exhaustive physical-device, OEM, or targetSdk 36 validation.
 

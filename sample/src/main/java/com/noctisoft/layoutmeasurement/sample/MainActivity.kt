@@ -22,6 +22,9 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.open_compose).setOnClickListener {
             startActivity(Intent(this, ComposeActivity::class.java))
         }
+        findViewById<Button>(R.id.open_bottom_sheets).setOnClickListener {
+            startActivity(Intent(this, BottomSheetShowcaseActivity::class.java))
+        }
         findViewById<Button>(R.id.open_mixed).setOnClickListener {
             startActivity(Intent(this, MixedActivity::class.java))
         }
