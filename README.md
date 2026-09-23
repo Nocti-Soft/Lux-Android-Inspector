@@ -2,6 +2,9 @@
 
 **Measure your Android UI directly inside your debug app.**
 
+[![](https://jitpack.io/v/Nocti-Soft/Lux-Android-Inspector.svg)](https://jitpack.io/#Nocti-Soft/Lux-Android-Inspector)
+
+
 Android Layout Inspector is an in-app layout measurement library for Android Views, Jetpack Compose, and mixed View/Compose screens. A draggable indigo control gives you size, gap, ruler, and bounds tools without attaching an Android Studio inspection session.
 
 > **Debug builds only.** Add the inspector to the app you want to inspect. It is not a standalone tool for inspecting other installed apps, and it does not request permission to draw over other apps.
