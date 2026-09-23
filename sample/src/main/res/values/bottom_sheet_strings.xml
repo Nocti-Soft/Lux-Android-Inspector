@@ -1,0 +1,15 @@
+<resources>
+    <string name="bottom_sheet_showcase">Bottom sheet showcase</string>
+    <string name="showcase_instructions">Reveal the inspector using its notification or a shake, then open a sheet below. The floating control should remain clickable above the modal window. No per-dialog inspector registration is used.</string>
+    <string name="show_xml_sheet">Show XML bottom sheet</string>
+    <string name="show_compose_sheet">Show Compose bottom sheet</string>
+    <string name="xml_sheet_title">XML + Compose bottom sheet</string>
+    <string name="compose_sheet_title">Compose modal bottom sheet</string>
+    <string name="sheet_instructions">Open the floating inspector and choose Size, Gap, Bounds, or Colors. Stop inspection to scroll, swipe, or use the Close button normally.</string>
+    <string name="sheet_xml_colors">XML color sample</string>
+    <string name="sheet_compose_colors">Compose color sample</string>
+    <string name="sheet_box_a">Box A</string>
+    <string name="sheet_box_b">Box B</string>
+    <string name="sheet_gap_hint">Boxes: 100 × 48 dp · Horizontal gap: 24 dp</string>
+    <string name="showcase_close_sheet">Close sheet</string>
+</resources>
