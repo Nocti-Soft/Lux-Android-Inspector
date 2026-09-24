@@ -1,118 +1,16 @@
 # Android Layout Inspector
 
-**Measure your Android UI directly inside your debug app.**
+[![JitPack](https://jitpack.io/v/Nocti-Soft/Lux-Android-Inspector.svg)](https://jitpack.io/#Nocti-Soft/Lux-Android-Inspector)
 
-[![](https://jitpack.io/v/Nocti-Soft/Lux-Android-Inspector.svg)](https://jitpack.io/#Nocti-Soft/Lux-Android-Inspector)
+Inspect sizes, gaps, text properties, and colors in Android Views and Jetpack Compose directly inside your app.
 
+> **Debug builds only · Android 7.0 / API 24+.** Inspects your app, not other installed apps.
 
-Android Layout Inspector is an in-app layout measurement library for Android Views, Jetpack Compose, and mixed View/Compose screens. A draggable indigo control gives you size, gap, ruler, and bounds tools without attaching an Android Studio inspection session.
+## Integration
 
-> **Debug builds only.** Add the inspector to the app you want to inspect. It is not a standalone tool for inspecting other installed apps, and it does not request permission to draw over other apps.
->
-> **JitPack integration:** The instructions below describe installing this library from JitPack. **Publication setup is still pending in this checkout**; use a successfully built version once available, or use the [local source alternative](#alternative-integrate-from-local-source) in the meantime.
+### 1. Add JitPack
 
-[JitPack integration](#integrate-into-your-app) · [Try the sample](#try-the-sample) · [Local source](#alternative-integrate-from-local-source) · [Compose support](#jetpack-compose-and-mixed-screens) · [Usage](#using-the-inspector) · [Troubleshooting](#troubleshooting)
-
-## Preview
-
-[Run the sample](#try-the-sample) to try the floating controls on XML, Compose, and mixed screens. Screenshots and historical verification notes under `docs/` are local development assets and are not included in the GitHub checkout.
-
-## Features
-
-| Tool | How it works |
-| --- | --- |
-| **Size** | Tap a captured UI element to display its width and height in dp and px. |
-| **Gap** | Tap two elements for their separation. Contained selections show left/top/right/bottom edge distances; identical, touching, and partially overlapping bounds are distinguished. |
-| **Ruler** | Drag between two points to measure their straight-line distance in dp and px. |
-| **Bounds** | Display the rectangles of captured View and tagged Compose nodes. Tap to recapture after a layout change. |
-| **Properties** | Inspect text size, family, weight, style and letter spacing when available, plus text/background/border colors. Mixed and unavailable values are explicit. |
-
-The control can be dragged, docked half-visible at either side, or hidden from Settings. Start/Stop is the final quick-menu action. Selected elements use a continuous magenta outline with a white contrast halo. The floating menu respects system-bar, cutout, and mandatory-gesture insets without padding the measurement canvas.
-
-## Requirements
-
-These are the repository's current build settings, not a promise that every consumer must use these exact versions or that arbitrary combinations are compatible.
-
-| Setting | Current value |
-| --- | --- |
-| Minimum Android version | Android 7.0 / API 24 |
-| Compile SDK | 35 |
-| Sample target SDK | 35 |
-| JDK / JVM target | 17 |
-| Gradle wrapper | 8.13 |
-| Android Gradle Plugin | 8.7.3 |
-| Kotlin | 2.1.0 |
-| Compose BOM | 2024.12.01 |
-
-See the [version catalog](gradle/libs.versions.toml), [library build](inspector/build.gradle.kts), and [sample build](sample/build.gradle.kts) for the source of truth. The library brings AndroidX Startup, Core KTX, and Compose UI dependencies, including in View-only consumers. It does not require your View-only app to convert its UI to Compose.
-
-## Try the sample
-
-Clone or download this repository into a directory named `AndroidLayoutInspector`. Configure JDK 17 and your Android SDK location using Android Studio, `ANDROID_HOME`, or an untracked `local.properties` file. Install Android SDK Platform 35 and the build tools selected by the project.
-
-From the repository root:
-
-```bash
-./gradlew :sample:assembleDebug
-```
-
-The APK is generated at:
-
-```text
-sample/build/outputs/apk/debug/sample-debug.apk
-```
-
-To install it on your selected test device or emulator:
-
-```bash
-./gradlew :sample:installDebug
-```
-
-On Windows, use `gradlew.bat` instead of `./gradlew`. With multiple devices connected, select the intended device in Android Studio or install the APK with `adb -s <device-serial> install -r <apk-path>`.
-
-Open **Inspector Sample**, allow its notification permission when prompted, and shake the device or tap its **Layout Inspector** notification. Tap the floating circle, then choose **Start Inspector** or a tool. The sample includes an XML screen, a Compose screen, and a mixed screen. Its application ID is `com.noctisoft.layoutmeasurement`.
-
-### Text and color properties
-
-Choose **Properties** (formerly **Colors**) and tap a captured component. Text-capable nodes show **Font size**, **Font family**, **Font weight**, **Font style**, and **Letter spacing** above the existing color rows. Non-text nodes omit the Text section. The readout is at most **260 dp wide × 240 dp high**, shrinking to fit smaller windows. **Drag the fixed Properties header** to move it away from the component; swipe inside the body to scroll through text properties and color rows. The header and **× close button** remain visible while scrolling. Its position is retained when selecting another component in the same inspector session and is clamped within the usable window. Copying still requires tapping a known color code. The close button dismisses the readout so you can select a component behind it.
-
-The **Inspect my properties** cards on the XML and Compose screens, and the property cards in both bottom-sheet showcases, use **18 sp, monospace, Bold (700), Italic, and 0.02 em letter spacing**. Pixel sizes depend on the selected component's density and font scaling. Stop inspection before scrolling or operating the host screen.
-
-Typography is a capture-time snapshot, not a claim about the font selected for every glyph. Views report current TextView paint values, including autosizing; the sp equivalent uses AndroidX Core's scaling-aware conversion. Compose reports text-layout style with Compose defaults, retaining sp/em letter-spacing units. Inline styles are combined by text range: only differing properties show **Mixed**. Text obtained from a tagged Compose container is explicitly labeled **Descendant text**.
-
-System font-family names require API 34+ for Views; numeric typeface weights require API 28+. Custom family names, unsupported custom spans, relative-em Compose font sizes, missing layout metadata, and inspection-limit overflows show **Unavailable** instead of guessed values. Compose generic families are labeled **configured**, not identified as a specific physical font file. Text contents are not added to the property snapshot or clipboard.
-
-The historical `MeasureMode.COLORS` enum entry remains available; `MeasureMode.PROPERTIES` is an alias for it. The existing `includeColors = true` capture argument now includes typography as well. Geometry-only captures remain lightweight and do not request these properties.
-
-### Parent / inner-view gaps
-
-Open **Parent / inner-view gaps** from the sample home screen. The same examples are included in the XML and Compose bottom sheets. Choose **Gap**, tap **Inner view**, then tap the shaded area inside the parent border (outside the inner view). Reverse the order to verify the same result.
-
-Expected physical edge distances are **Left 24 dp, Top 32 dp, Right 40 dp, Bottom 48 dp**. Yellow guides connect each inner edge to the corresponding outer edge. A grouped, foreground readout keeps all four dp/px values readable even when an edge is flush or the inner view is narrow. Identical selections show **Same bounds**, and adjacent selections show **Touching** with zero separation. Ordinary sibling gaps and partial-overlap measurements remain available.
-
-Distances are calculated between captured bounds, not the inset edge of a decorative stroke, nor a claimed `padding`/`layout_margin` property. Geometric containment alone does not establish View ancestry. Stop inspection before scrolling the sample or interacting with sheet controls.
-
-### Bottom-sheet showcase
-
-Open **Bottom sheet showcase** from the sample home screen. **Show XML bottom sheet** opens a Material `BottomSheetDialogFragment` with XML targets and a tagged Compose island. **Show Compose bottom sheet** opens a Compose Material 3 `ModalBottomSheet`. Neither example registers a dialog with the inspector.
-
-Reveal the controls through a shake or the inspector notification, open a sheet, and select Size, Gap, Bounds, or Properties. The two boxes are 100 × 48 dp with a 24 dp horizontal gap. Stop inspection before scrolling, dragging, or pressing **Close sheet**. Dismiss and reopen the sheet to check that one control remains and the selected tool and placement are retained.
-
-The overlay follows the active, focusable app-owned Activity/dialog window. It captures that window only and clears selections when changing windows. Nested dialogs return to the preceding window when dismissed. Window coordinates are converted into canvas-local coordinates; equal-size captures prefer children over containers.
-
-On API 29+, discovery uses [WindowInspector](https://developer.android.com/reference/android/view/inspector/WindowInspector). API 24–28 uses a guarded legacy lookup; OEM restrictions can cause Activity-only fallback with a `LayoutInspector` warning. There is no system-overlay permission or replacement of host window flags/listeners. Window checks run every 200 ms only while controls or measurement are in use in a resumed Activity, and stop on pause/destroy. Popups/subwindows, non-focusable windows, other apps, and system dialogs are not covered.
-
-## Integrate into your app
-
-### Before you start: choose a built version
-
-Open [Lux Android Inspector on JitPack](https://jitpack.io/#Nocti-Soft/Lux-Android-Inspector), look up the repository, and select a version whose build has succeeded. Confirm the dependency shown by **Get it**. Replace `<jitpack-version>` in the examples with that exact version, including a leading `v` when it is part of the tag. Pin a specific tag rather than a moving snapshot for shared development builds and CI.
-
-**Current publication status:** this checkout does not yet apply `maven-publish` or include `jitpack.yml`, and no remote release tag was found when these instructions were updated. `<jitpack-version>` is deliberately a placeholder, not an available release. Adding the repository URL alone will not make this checkout resolvable; complete the [publisher setup](#publishing-on-jitpack-maintainers) first or use the [local source alternative](#alternative-integrate-from-local-source).
-
-### 1. Add the JitPack repository
-
-Merge this into your application's root **`settings.gradle.kts`**, inside its existing `dependencyResolutionManagement` block. Keep your current repository policy and any other repositories. Do not add JitPack under `pluginManagement` or `buildscript`.
+Merge this into your app's **`settings.gradle.kts`**, keeping your existing repositories:
 
 ```kotlin
 dependencyResolutionManagement {
@@ -121,20 +19,15 @@ dependencyResolutionManagement {
         mavenCentral()
         maven {
             url = uri("https://jitpack.io")
-            content {
-                includeGroup("com.github.Nocti-Soft")
-                includeGroup("com.github.Nocti-Soft.Lux-Android-Inspector")
-            }
+            content { includeGroup("com.github.Nocti-Soft") }
         }
     }
 }
 ```
 
-The content filter limits JitPack lookups to this publisher's repository coordinate and this repository's module coordinates. Keep `google()` and `mavenCentral()` for AndroidX and other dependencies. See [JitPack's Android installation guide](https://docs.jitpack.io/android/).
+### 2. Add the debug dependency
 
-### 2. Add the debug-only dependency
-
-In your application's **`app/build.gradle.kts`**, replace the version placeholder before syncing:
+In **`app/build.gradle.kts`**:
 
 ```kotlin
 dependencies {
@@ -142,277 +35,77 @@ dependencies {
 }
 ```
 
-This is the intended repository-level coordinate. For a multi-module publication exposing the library as `inspector`, the module-specific form is `com.github.Nocti-Soft.Lux-Android-Inspector:inspector:<jitpack-version>`. Use the form confirmed by the successful JitPack build, and add **only one** dependency. Do not depend on the `sample` application. JitPack documents both forms in its [multi-module publishing guide](https://docs.jitpack.io/building/#multi-module-projects).
+Use the JitPack badge above to select a **successfully built tag**. Replace `<jitpack-version>` with that exact version, including the leading `v` when present, and confirm the coordinate shown by **Get it**.
 
-**Keep `debugImplementation`, not `implementation` or `releaseImplementation`.** It keeps the inspector out of your application's release dependency graph. A library AAR built from a publisher's `release` variant is still a debug-only tool in the consuming app; it is not a no-op release dependency. Do not add an `@aar` suffix or disable transitive dependencies: the published dependency metadata must supply the inspector's AndroidX dependencies.
+Keep `debugImplementation`, not `implementation`, so the inspector is excluded from release builds. Remove any previous local inspector dependency when switching to JitPack.
 
-Do not change your app's `applicationId` or namespace to the inspector's package. The initializer uses the **host application's ID** for its provider authority, and notifications belong to the host app.
+### 3. Run your debug app
 
-JitPack consumers do not need `includeBuild`, a local inspector checkout, or `debugImplementation(project(":inspector"))`. Remove the old local inspector dependency/substitution when switching to JitPack, then sync Gradle. For custom development build types, scope the dependency to those configurations explicitly and verify that production variants do not inherit it.
+Sync Gradle and launch the debug build. Initialization is automatic through AndroidX Startup; no `Application` call or per-screen registration is required. Keep the library's Startup initializer enabled in the debug manifest.
 
-<details>
-<summary>Groovy DSL equivalent</summary>
+For notification access on Android 13+, request `POST_NOTIFICATIONS` through your app's permission flow. The library declares the permission but does not show the prompt. See the [sample Activity](sample/src/main/java/com/noctisoft/layoutmeasurement/sample/MainActivity.kt) for an example.
 
-In the application's root `settings.gradle`:
+## Usage
 
-```groovy
-dependencyResolutionManagement {
-    repositories {
-        google()
-        mavenCentral()
-        maven {
-            url = uri('https://jitpack.io')
-            content {
-                includeGroup 'com.github.Nocti-Soft'
-                includeGroup 'com.github.Nocti-Soft.Lux-Android-Inspector'
-            }
-        }
-    }
-}
-```
+With your app open, **shake the device** or tap its **Layout Inspector notification** to reveal the floating control. Tap the circle and choose a tool:
 
-In `app/build.gradle`, after replacing the version placeholder:
+| Tool | Example usage |
+| --- | --- |
+| **Size** | Tap a component to read its width and height in dp and px. |
+| **Gap** | Tap two components to measure their separation or inner-to-outer edge distances. |
+| **Properties** | Tap a component to inspect font size, family, weight, style, letter spacing, and text/background/border colors when available. |
+| **Ruler** | Drag between two points to measure their distance. |
+| **Bounds** | Show component outlines; tap to refresh after a layout change. |
 
-```groovy
-dependencies {
-    debugImplementation 'com.github.Nocti-Soft:Lux-Android-Inspector:<jitpack-version>'
-}
-```
+**Move the Properties panel by dragging its header.** Scroll inside the panel to see more values, tap a color code to copy it, or tap **×** to close it.
 
-</details>
+Choose **Stop Inspector** before scrolling, pressing buttons, or interacting with your app. To restore controls hidden through **Settings → Hide Inspector**, use the notification rather than shaking.
 
-### 3. Initialization is automatic
+### XML / Android Views
 
-The library [manifest](inspector/src/main/AndroidManifest.xml) registers [InspectorInitializer](inspector/src/main/java/com/noctisoft/layoutmeasurement/InspectorInitializer.kt) through [AndroidX App Startup](https://developer.android.com/topic/libraries/app-startup). It attaches an in-app overlay as Activities resume and follows their active modal dialog windows while the inspector is in use. No call from your `Application` and no per-screen overlay setup are required with the default manifest configuration.
+Views need no extra tags or annotations. For example, select **Properties** and tap a `TextView` to inspect its typography and colors, or select **Size** to measure a button.
 
-Do not remove the initializer's manifest metadata or the Startup provider from the debug variant. If your app intentionally disables App Startup, reconcile that setup before expecting automatic activation.
+### Jetpack Compose
 
-A new process starts with inspection **stopped** and the control **hidden**. Reveal it by shaking the device or tapping the notification. The saved position and dock side are restored; the previous measurement session and selection are not persisted across process restarts.
-
-### 4. Enable notification recovery
-
-On Android 13 / API 33 and newer, posting the inspector notification requires the user's [notification permission](https://developer.android.com/develop/ui/compose/notifications/notification-permission). The library declares `POST_NOTIFICATIONS` in its manifest, but **does not display the permission prompt for your app**. The sample requests it from its [MainActivity](sample/src/main/java/com/noctisoft/layoutmeasurement/sample/MainActivity.kt).
-
-Use your app's existing permission flow or a developer-triggered debug helper. For example, put the following in **`app/src/debug/java/com/example/app/InspectorPermissions.kt`**, replacing the package with your app's package:
+Add `Modifier.testTag` to each Compose element you want to select individually:
 
 ```kotlin
-package com.example.app
-
-import android.Manifest
-import android.app.Activity
-import android.content.pm.PackageManager
-import android.os.Build
-
-fun Activity.requestInspectorNotifications() {
-    if (Build.VERSION.SDK_INT >= 33 &&
-        checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
-        PackageManager.PERMISSION_GRANTED
-    ) {
-        requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 4101)
-    }
-}
-```
-
-Call this from an Activity in response to an explicit developer action. Reserve a request code that does not conflict with your app's permission handling. Do not repeatedly prompt after denial. When calling the helper from shared `src/main` code, supply the same function in **`src/release`** with a no-op body and the same package:
-
-```kotlin
-package com.example.app
-
-import android.app.Activity
-
-fun Activity.requestInspectorNotifications() = Unit
-```
-
-Add equivalent no-op definitions for any other build types that exclude the debug helper. Your release app does not need this permission just for the inspector.
-
-The **Layout Inspector** channel must also be enabled. Use **Settings → Notification Controls** to open the host app's inspector channel on API 26+, or its app-notification settings on older supported versions. Returning to the app refreshes the notification.
-
-When notification recovery is unavailable, **Hide** is disabled and explains why. Inspection can still be started after a shake; a device without an accelerometer needs the notification or explicit debug-only wiring for activation.
-
-### 5. Verify release isolation
-
-Build both consumer variants:
-
-```bash
-./gradlew :app:assembleDebug :app:assembleRelease
-./gradlew :app:dependencies --configuration debugRuntimeClasspath
-./gradlew :app:dependencies --configuration releaseRuntimeClasspath
-```
-
-The inspector dependency—either the JitPack artifact or the substituted local project—must appear in the debug runtime graph and **not** in the release graph. Check the release APK and merged manifest as well: inspector classes, its initializer metadata, and its action receiver must be absent. Do not remove a shared AndroidX Startup provider or notification permission if another release dependency legitimately needs it.
-
-Keep inspector imports in `src/debug`. Wrapping an inspector reference in `if (BuildConfig.DEBUG)` inside `src/main` is not enough: the release compiler still needs to resolve that reference. Use variant-specific wrappers with release no-ops when shared code needs a debug hook. No no-op inspector artifact is provided for host release builds.
-
-### Alternative: integrate from local source
-
-Use this route before the first JitPack release, or when developing the inspector locally. Choose either this source substitution or the JitPack dependency above, not both. Clone the repository into a directory named `AndroidLayoutInspector` to match these paths, and keep it beside your application:
-
-```text
-workspace/
-├── YourApp/
-│   ├── settings.gradle.kts
-│   └── app/
-└── AndroidLayoutInspector/
-    ├── settings.gradle.kts
-    ├── gradle/libs.versions.toml
-    ├── inspector/
-    └── sample/
-```
-
-Add this to your application's **`settings.gradle.kts`**, alongside its existing configuration:
-
-```kotlin
-includeBuild("../AndroidLayoutInspector") {
-    name = "layout-inspector-source"
-    dependencySubstitution {
-        substitute(module("com.noctisoft.local:layout-inspector"))
-            .using(project(":inspector"))
-    }
-}
-```
-
-This uses a [Gradle composite build](https://docs.gradle.org/current/userguide/composite_builds.html). Including the repository root lets the inspector keep its own build configuration and version catalog. Do not point `includeBuild` at the `inspector/` subdirectory.
-
-`com.noctisoft.local:layout-inspector` is only a **local substitution key**. It has no published version and must be used with the `includeBuild` block above. No extra Maven repository is needed for that key. Keep `google()` and `mavenCentral()` available to your application for the inspector's AndroidX dependencies.
-
-**Add the local debug dependency**
-
-In your application's **`app/build.gradle.kts`**:
-
-```kotlin
-dependencies {
-    debugImplementation("com.noctisoft.local:layout-inspector")
-}
-```
-
-The existing [sample module](sample/build.gradle.kts) lives in the same multi-module build as the library, so it uses this form instead:
-
-```kotlin
-dependencies {
-    debugImplementation(project(":inspector"))
-}
-```
-
-Use the project form only when `:inspector` is actually a subproject of your build. Simply pointing a new subproject at this repository's module also requires reconciling its `libs` catalog and plugin aliases with the host build; the composite approach avoids that step.
-
-**Custom variants and CI:** explicitly scope the dependency to the intended development variants. A consumer with a nonstandard build type may need a matching fallback to the library's `debug` variant. Ensure CI checks out the inspector at the same relative path, pinned to a chosen commit or tag. The consumer's Gradle invocation runs the composite, so check toolchain and resolved dependency compatibility before adopting it in a different build.
-
-## Jetpack Compose and mixed screens
-
-Compose capture currently exposes **tagged semantics nodes**, not every composable. Add `Modifier.testTag` to the elements whose bounds you want to measure:
-
-```kotlin
-import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.sp
 
 @Composable
-fun CheckoutButton(onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier.testTag("checkout_button"),
-    ) {
-        Text("Checkout")
-    }
+fun InspectableTitle() {
+    Text(
+        text = "Inspect my properties",
+        fontSize = 18.sp,
+        modifier = Modifier.testTag("title"),
+    )
 }
 ```
 
-Use the tag on the actual element you intend to measure. A content description alone is not a substitute for a `testTag` in this implementation. Untagged Compose content does not become an independently captured Compose node; the enclosing Android/Compose container may still be selected.
+Choose **Properties** and tap the title. The same tagging works inside a `ComposeView` in an XML screen. Untagged composables are not independently selectable.
 
-The same approach applies to a `ComposeView` hosted in an XML layout. See [ComposeActivity](sample/src/main/java/com/noctisoft/layoutmeasurement/sample/ComposeActivity.kt) and [MixedActivity](sample/src/main/java/com/noctisoft/layoutmeasurement/sample/MixedActivity.kt).
+### Parent / inner-view gaps
 
-Capture uses the unmerged semantics tree and window-relative bounds. When upgrading your app's Compose dependencies, recheck capture behavior against the resolved version; the pinned sample is not a compatibility guarantee for all Compose releases.
+Choose **Gap**, tap the inner view, then tap the exposed area of its surrounding container. The readout shows **Left, Top, Right, and Bottom** edge distances; either selection order works. These are distances between captured bounds, not declared padding or margins.
 
-## Using the inspector
+### Bottom sheets
 
-| Action | Result |
-| --- | --- |
-| Shake while the host app is resumed | Reveal the controls; does not start measurement by itself. A deliberately hidden control stays hidden. |
-| Tap the Layout Inspector notification | Reveal or restore the controls. It does not launch an inspection overlay over another app. |
-| Tap the circle | Open the quick menu. Tap a half-docked circle to undock it first. |
-| Choose Size, Gap, Ruler, or Bounds | Start that tool or switch directly from the active tool. |
-| Start Inspector | Start the retained tool; Size is the default in a fresh process. |
-| Stop Inspector | Stop measurement and clear the selection. The quick-menu action collapses the menu and keeps the circle. Notification Stop does not force a hidden control to reappear. |
-| Drag toward the left or right edge | Dock the control half-visible. Docking does not stop measurement. |
-| Settings → Hide Inspector | Fully hide the controls while keeping measurement active. Restore through the notification, not another shake. |
-| Settings → Notification Controls | Open Android's notification settings for the host app/inspector channel. |
+Use the same tools inside XML and Compose modal bottom sheets; no per-dialog registration is needed. The inspector returns to the previous window after dismissal. On API 24–28, device restrictions may limit inspection to the Activity.
 
-Position and dock side are saved across app restarts. The current tool/session is shared across Activity changes within the process, but an Activity's local captured selection is cleared on detach and must be selected again.
+## Try the sample
 
-**Hide is not Stop.** Measurement drawings and measurement touch handling remain active when the controls are hidden. For an unobstructed app screenshot, stop inspection first, then hide the idle controls. Capture the screenshot using your normal Android/ADB tooling; the inspector does not include a screenshot-export action.
-
-## Scope and limitations
-
-- **Host app only.** The overlay is attached to the resumed Activity or its active app-owned modal dialog decor view. There is no system overlay service, accessibility service, root requirement, or inspection of other processes.
-- **Snapshot-based measurement.** Selection uses captured rectangles rather than continuous layout tracking. Stop to interact with or scroll the app, then start and select again after changes. Bounds mode recaptures on a tap.
-- **Rectangles, not rendered shapes.** Size, gap, and hit testing use axis-aligned bounds. Overlapping nodes are selected by the smallest captured area containing the tap. Offscreen geometry is clipped rather than replaced with an invented visible border.
-- **Compose tagging is required for element granularity.** Tagged Compose nodes in supported dialogs are captured. Web content, custom drawing, popup/subwindows, and windows outside the host Activity are not parsed into arbitrary UI elements.
-- **No process-lifetime guarantee.** Hiding leaves the in-process inspection session active; it does not start a foreground service or keep the app alive after Android ends its process.
-- **Validation has a defined scope.** The recorded UI checks use an Android 16 / API 36 emulator with 16 KiB pages and the targetSdk 35 sample. Native Robolectric tests cover rendering and older-API paths. This is not exhaustive physical-device, OEM, or targetSdk 36 validation.
-
-## Troubleshooting
-
-| Problem | Check |
-| --- | --- |
-| No circle on launch | Hidden startup is intentional. Resume the host Activity, shake the device, or tap its notification. Check the debug dependency and merged initializer metadata. |
-| No notification | Allow the host app's notification permission on API 33+, enable its Layout Inspector channel, and return to the app. Posting failures are logged with the `LayoutInspector` tag. |
-| Hide is disabled | Enable notification recovery first. The guard prevents deliberately hiding the only available controls. |
-| Shake does not restore a hidden control | After Settings → Hide Inspector, restoration is intentionally notification-only. |
-| A Compose element cannot be selected | Add a `Modifier.testTag` to the intended element, not only a parent or content description. Inspect the resolved Compose UI version if behavior changes after an upgrade. |
-| Taps do not activate the underlying app | An active measurement tool intercepts canvas touches. Stop inspection before normal interaction. |
-| A measurement no longer matches a moved element | The selection is a snapshot. Stop, change the UI, restart the tool, and select again. |
-| Gradle cannot resolve the JitPack dependency | Replace `<jitpack-version>` with an exact successfully built version; verify the dependency shown by JitPack, repository-name capitalization, and the repository/content filter in the consuming application's settings file. This checkout still needs publisher setup before its first release. |
-| JitPack reports a failed build or no artifacts | Check the selected version's JitPack build log and the publisher's Maven publication/JDK configuration. A Git tag alone does not create a usable library artifact when publishing is not configured. |
-| Duplicate inspector classes after switching to JitPack | Remove the previous local source/project dependency and its substitution. Keep just one integration route. |
-| Gradle cannot resolve the local source dependency | Check the checkout path, substitution key, and `:inspector` project mapping in the local source alternative. That substitution key is not a Maven artifact. |
-| A consumer build reports variant/toolchain conflicts | Compare the host build with the pinned versions above and inspect the resolved dependency graph. Custom build types need an appropriate variant match. |
-| Release compilation references missing inspector classes | Move those references out of `src/main` into `src/debug`, with release no-op wrappers where needed. |
-
-## Build and verify this repository
-
-Run the complete local verification command from the repository root:
+Open this repository in Android Studio with **JDK 17** and **Android SDK 35** configured, then run the **sample** debug configuration. Or build from the repository root:
 
 ```bash
-./gradlew :inspector:testDebugUnitTest \
-  :sample:testDebugUnitTest \
-  :inspector:assembleDebug \
-  :sample:assembleDebug \
-  :sample:assembleRelease \
-  :inspector:lintDebug \
-  :sample:lintDebug \
-  --rerun-tasks
+./gradlew :sample:assembleDebug
 ```
 
-The tests cover geometry, controller state, placement persistence, floating-control interactions, overlay lifecycle behavior, notification handling, native outline rendering, and sample edge-to-edge setup. Consult the generated test and lint reports for current results; a successful build does not mean there are no warnings.
+Install `sample/build/outputs/apk/debug/sample-debug.apk` on your test device or emulator.
 
-Historical UI and review reports are maintained locally under the ignored `docs/verification/` directory, not in the published GitHub checkout. They describe their recorded revisions and test environments, not the state of every later checkout. Run the checks above for the revision being released.
+The sample includes XML, Compose, mixed screens, **Parent / inner-view gaps**, and **Bottom sheet showcase**. The gap examples use **Left 24 dp, Top 32 dp, Right 40 dp, Bottom 48 dp**. The **Inspect my properties** cards demonstrate typography and color inspection.
 
-## Repository structure
-
-```text
-inspector/           Android measurement library
-sample/              XML, Compose, and mixed-screen demo
-  src/main/          Sample app shared code
-  src/test/          Sample edge-to-edge regression tests
-gradle/              Version catalog and Gradle wrapper
-```
-
-## Contributing
-
-For a bug report, include the commit you tested, Android API level, device/emulator, navigation mode, display density/font scale, selected tool, and a minimal reproduction. For Compose issues, include the relevant modifiers and tags. Remove private app content, tokens, and personal information from screenshots and logs.
-
-Keep the inspector debug-only and its overlay inside the host app. Add regression coverage for behavior changes and run the checks above before proposing a change. Do not treat the pinned sample versions as a request to upgrade another application's toolchain.
-
-## Publishing on JitPack (maintainers)
-
-Consumer installation instructions do not configure publication. Before advertising a resolvable version, configure the `inspector` library with `maven-publish`, an Android software component, and a Maven publication carrying the AAR, sources, and dependency metadata. Publish the library only, not the sample APK. Configure Java 17 in a root `jitpack.yml` for this repository's AGP 8 build, and verify the Maven-local publication before creating a release. Follow [JitPack's Android publishing instructions](https://docs.jitpack.io/android/) and [Android's publishing-variant guide](https://developer.android.com/build/publish-library/configure-pub-variants).
-
-After local tests, consumer debug/release isolation checks, and publication checks pass, commit the publishing configuration, push it, and create a new version tag on that commit. Request that version on JitPack, inspect its build log and published artifacts, and test installation from JitPack in a separate consumer. Only then replace the version placeholder and remove the pending-publication notices in this README. A successful local build is not proof that JitPack can serve the artifact.
-
-Keep `docs/`, `.worktrees/`, `.superpowers/`, SDK settings, signing material, and build outputs excluded from new commits. Review tracked files **and Git history** for private information before publishing; ignore rules do not erase previously committed documents. Do not stage local handoff notes or verification scratch.
-
-## License
-
-See [LICENSE](LICENSE) for the Apache License, Version 2.0.
+[Apache License 2.0](LICENSE)
