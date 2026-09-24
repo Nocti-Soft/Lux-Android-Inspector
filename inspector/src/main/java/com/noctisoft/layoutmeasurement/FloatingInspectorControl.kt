@@ -337,7 +337,7 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
             addView(modeButton("Gap", MeasureMode.GAP, R.drawable.ic_inspector_gap))
             addView(modeButton("Ruler", MeasureMode.RULER, R.drawable.ic_inspector_ruler))
             addView(modeButton("Bounds", MeasureMode.BOUNDS, R.drawable.ic_inspector_bounds))
-            addView(modeButton("Colors", MeasureMode.COLORS, R.drawable.ic_inspector_colors))
+            addView(modeButton("Properties", MeasureMode.PROPERTIES, R.drawable.ic_inspector_colors))
             addView(actionButton("Settings", R.drawable.ic_inspector_settings) { showSettingsPanel() })
             addView(View(context).apply { background = roundedBackground(Color.argb(96, 255, 255, 255), 0) }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(1)).apply { setMargins(dp(8), dp(6), dp(8), dp(6)) })
             sessionButton = actionButton("Start Inspector", R.drawable.ic_inspector_search) {
@@ -417,7 +417,7 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
         setColor(color)
     }
 
-    private fun MeasureMode.label(): String = name.lowercase().replaceFirstChar { it.uppercase() }
+    private fun MeasureMode.label(): String = if (this == MeasureMode.PROPERTIES) "Properties" else name.lowercase().replaceFirstChar { it.uppercase() }
 
     private fun dp(value: Int): Int = (value * density).roundToInt()
 

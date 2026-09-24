@@ -19,9 +19,10 @@ Android Layout Inspector is an in-app layout measurement library for Android Vie
 | Tool | How it works |
 | --- | --- |
 | **Size** | Tap a captured UI element to display its width and height in dp and px. |
-| **Gap** | Tap two elements to display their horizontal and/or vertical separation. Overlapping axis-aligned bounds report a zero gap. |
+| **Gap** | Tap two elements for their separation. Contained selections show left/top/right/bottom edge distances; identical, touching, and partially overlapping bounds are distinguished. |
 | **Ruler** | Drag between two points to measure their straight-line distance in dp and px. |
 | **Bounds** | Display the rectangles of captured View and tagged Compose nodes. Tap to recapture after a layout change. |
+| **Properties** | Inspect text size, family, weight, style and letter spacing when available, plus text/background/border colors. Mixed and unavailable values are explicit. |
 
 The control can be dragged, docked half-visible at either side, or hidden from Settings. Start/Stop is the final quick-menu action. Selected elements use a continuous magenta outline with a white contrast halo. The floating menu respects system-bar, cutout, and mandatory-gesture insets without padding the measurement canvas.
 
@@ -68,11 +69,31 @@ On Windows, use `gradlew.bat` instead of `./gradlew`. With multiple devices conn
 
 Open **Inspector Sample**, allow its notification permission when prompted, and shake the device or tap its **Layout Inspector** notification. Tap the floating circle, then choose **Start Inspector** or a tool. The sample includes an XML screen, a Compose screen, and a mixed screen. Its application ID is `com.noctisoft.layoutmeasurement`.
 
+### Text and color properties
+
+Choose **Properties** (formerly **Colors**) and tap a captured component. Text-capable nodes show **Font size**, **Font family**, **Font weight**, **Font style**, and **Letter spacing** above the existing color rows. Non-text nodes omit the Text section. The readout is at most **260 dp wide × 240 dp high**, shrinking to fit smaller windows. **Drag the fixed Properties header** to move it away from the component; swipe inside the body to scroll through text properties and color rows. The header and **× close button** remain visible while scrolling. Its position is retained when selecting another component in the same inspector session and is clamped within the usable window. Copying still requires tapping a known color code. The close button dismisses the readout so you can select a component behind it.
+
+The **Inspect my properties** cards on the XML and Compose screens, and the property cards in both bottom-sheet showcases, use **18 sp, monospace, Bold (700), Italic, and 0.02 em letter spacing**. Pixel sizes depend on the selected component's density and font scaling. Stop inspection before scrolling or operating the host screen.
+
+Typography is a capture-time snapshot, not a claim about the font selected for every glyph. Views report current TextView paint values, including autosizing; the sp equivalent uses AndroidX Core's scaling-aware conversion. Compose reports text-layout style with Compose defaults, retaining sp/em letter-spacing units. Inline styles are combined by text range: only differing properties show **Mixed**. Text obtained from a tagged Compose container is explicitly labeled **Descendant text**.
+
+System font-family names require API 34+ for Views; numeric typeface weights require API 28+. Custom family names, unsupported custom spans, relative-em Compose font sizes, missing layout metadata, and inspection-limit overflows show **Unavailable** instead of guessed values. Compose generic families are labeled **configured**, not identified as a specific physical font file. Text contents are not added to the property snapshot or clipboard.
+
+The historical `MeasureMode.COLORS` enum entry remains available; `MeasureMode.PROPERTIES` is an alias for it. The existing `includeColors = true` capture argument now includes typography as well. Geometry-only captures remain lightweight and do not request these properties.
+
+### Parent / inner-view gaps
+
+Open **Parent / inner-view gaps** from the sample home screen. The same examples are included in the XML and Compose bottom sheets. Choose **Gap**, tap **Inner view**, then tap the shaded area inside the parent border (outside the inner view). Reverse the order to verify the same result.
+
+Expected physical edge distances are **Left 24 dp, Top 32 dp, Right 40 dp, Bottom 48 dp**. Yellow guides connect each inner edge to the corresponding outer edge. A grouped, foreground readout keeps all four dp/px values readable even when an edge is flush or the inner view is narrow. Identical selections show **Same bounds**, and adjacent selections show **Touching** with zero separation. Ordinary sibling gaps and partial-overlap measurements remain available.
+
+Distances are calculated between captured bounds, not the inset edge of a decorative stroke, nor a claimed `padding`/`layout_margin` property. Geometric containment alone does not establish View ancestry. Stop inspection before scrolling the sample or interacting with sheet controls.
+
 ### Bottom-sheet showcase
 
 Open **Bottom sheet showcase** from the sample home screen. **Show XML bottom sheet** opens a Material `BottomSheetDialogFragment` with XML targets and a tagged Compose island. **Show Compose bottom sheet** opens a Compose Material 3 `ModalBottomSheet`. Neither example registers a dialog with the inspector.
 
-Reveal the controls through a shake or the inspector notification, open a sheet, and select Size, Gap, Bounds, or Colors. The two boxes are 100 × 48 dp with a 24 dp horizontal gap. Stop inspection before scrolling, dragging, or pressing **Close sheet**. Dismiss and reopen the sheet to check that one control remains and the selected tool and placement are retained.
+Reveal the controls through a shake or the inspector notification, open a sheet, and select Size, Gap, Bounds, or Properties. The two boxes are 100 × 48 dp with a 24 dp horizontal gap. Stop inspection before scrolling, dragging, or pressing **Close sheet**. Dismiss and reopen the sheet to check that one control remains and the selected tool and placement are retained.
 
 The overlay follows the active, focusable app-owned Activity/dialog window. It captures that window only and clears selections when changing windows. Nested dialogs return to the preceding window when dismissed. Window coordinates are converted into canvas-local coordinates; equal-size captures prefer children over containers.
 

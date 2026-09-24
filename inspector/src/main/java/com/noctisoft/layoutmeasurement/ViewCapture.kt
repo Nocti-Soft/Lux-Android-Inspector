@@ -7,7 +7,7 @@ object ViewCapture {
 
     private const val OVERLAY_TAG = "com.noctisoft.layoutmeasurement.OVERLAY"
 
-    /** All visible widgets under [root], in window coordinates. */
+    /** Visible widgets in window coordinates; [includeColors] enables colors and typography. */
     @JvmOverloads
     fun captureAll(root: View, includeColors: Boolean = false): List<CapturedNode> {
         val out = mutableListOf<CapturedNode>()
@@ -42,6 +42,7 @@ object ViewCapture {
             bounds = Bounds(loc[0], loc[1], loc[0] + view.width, loc[1] + view.height),
             source = Source.XML,
             colors = if (includeColors) ViewColorCapture.capture(view) else null,
+            textProperties = if (includeColors) ViewTextCapture.capture(view) else null,
         )
     }
 

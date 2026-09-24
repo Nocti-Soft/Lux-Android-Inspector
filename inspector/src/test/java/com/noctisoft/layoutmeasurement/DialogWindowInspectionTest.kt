@@ -62,7 +62,7 @@ class DialogWindowInspectionTest {
         val circle = find(overlay!!, "Layout inspector controls")!!
         tap(root, circle)
         assertEquals(FloatingControlState.EXPANDED, InspectorController.controlState)
-        assertNotNull(find(overlay, "Colors"))
+        assertNotNull(find(overlay, "Properties"))
     }
 
     @Test fun `dialog dismissal restores one activity overlay with tool and placement retained`() {

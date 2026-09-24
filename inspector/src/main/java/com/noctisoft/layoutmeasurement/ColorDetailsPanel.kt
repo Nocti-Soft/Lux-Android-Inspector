@@ -10,24 +10,38 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.text.TextUtils
 import android.view.Gravity
+import android.view.MotionEvent
+import android.view.ViewConfiguration
 import android.view.View
 import android.widget.LinearLayout
+import android.widget.FrameLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import kotlin.math.roundToInt
+import kotlin.math.hypot
 
 /** A bounded native readout; only an explicit tap on a known code writes the clipboard. */
-internal class ColorDetailsPanel(context: Context) : ScrollView(context) {
+internal class ColorDetailsPanel(context: Context) : LinearLayout(context) {
+    companion object {
+        const val MAX_WIDTH_DP = 260
+        const val MAX_HEIGHT_DP = 240
+    }
     var onDismissRequested: () -> Unit = {}
-    private val content = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
-    private var maximumWidth = Int.MAX_VALUE
-    private var maximumHeight = Int.MAX_VALUE
+    var onDragBy: (Float, Float) -> Unit = { _, _ -> }
+    private val content = LinearLayout(context).apply { orientation = VERTICAL }
+    private val scrollContent = ScrollView(context).apply {
+        isFillViewport = false
+        isClickable = true
+    }
+    private val dragHandle = DragHandle(context)
+    private var maximumWidth = dp(MAX_WIDTH_DP)
+    private var maximumHeight = dp(MAX_HEIGHT_DP)
     private var hasSelection = false
 
     init {
         visibility = GONE
-        isFillViewport = false
+        orientation = VERTICAL
         isClickable = true
         elevation = dp(8).toFloat()
         background = GradientDrawable().apply {
@@ -36,45 +50,67 @@ internal class ColorDetailsPanel(context: Context) : ScrollView(context) {
             setStroke(dp(1), 0xFF4F46E5.toInt())
         }
         setPadding(dp(12), dp(10), dp(12), dp(10))
-        addView(content, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        val header = LinearLayout(context).apply {
+            orientation = HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(dragHandle, LayoutParams(0, dp(48), 1f))
+            addView(TextView(context).apply {
+                text = "×"
+                textSize = 22f
+                includeFontPadding = false
+                gravity = Gravity.CENTER
+                setTextColor(0xFF4F46E5.toInt())
+                isClickable = true
+                isFocusable = true
+                contentDescription = "Dismiss properties"
+                setOnClickListener { onDismissRequested() }
+            }, LayoutParams(dp(48), dp(48)))
+        }
+        addView(header, LayoutParams(LayoutParams.MATCH_PARENT, dp(48)))
+        scrollContent.addView(content, FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        addView(scrollContent, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
     }
 
     fun setMaximumSize(width: Int, height: Int) {
-        maximumWidth = width.coerceAtLeast(0)
-        maximumHeight = height.coerceAtLeast(0)
+        maximumWidth = width.coerceIn(0, dp(MAX_WIDTH_DP))
+        maximumHeight = height.coerceIn(0, dp(MAX_HEIGHT_DP))
         updateVisibility()
         requestLayout()
     }
 
     fun render(node: CapturedNode?) {
         content.removeAllViews()
-        scrollTo(0, 0)
+        scrollContent.scrollTo(0, 0)
+        dragHandle.cancelGesture()
         hasSelection = node != null
         updateVisibility()
         if (node == null) return
-        content.addView(TextView(context).apply {
-            text = "Close"
-            textSize = 14f
-            setTextColor(0xFF4F46E5.toInt())
-            gravity = Gravity.END or Gravity.CENTER_VERTICAL
-            minimumHeight = dp(48)
-            setPadding(dp(8), 0, dp(8), 0)
-            isClickable = true
-            isFocusable = true
-            contentDescription = "Dismiss color details"
-            setOnClickListener { onDismissRequested() }
-        }, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
-        content.addView(label("Colors · ${node.label}", 15f, true).apply {
+        content.addView(label("Properties · ${node.label}", 15f, true).apply {
             maxLines = 2
             ellipsize = TextUtils.TruncateAt.END
         })
         content.addView(label("${node.source} · ARGB #AARRGGBB · tap a code to copy", 11f))
+        node.textProperties?.let { text ->
+            content.addView(label("Text", 14f, true).apply { setPadding(0, dp(12), 0, dp(2)) })
+            text.origin?.let { content.addView(label(it, 11f, true)) }
+            propertyRow("Font size", text.fontSize)
+            propertyRow("Font family", text.fontFamily)
+            propertyRow("Font weight", text.fontWeight)
+            propertyRow("Font style", text.fontStyle)
+            propertyRow("Letter spacing", text.letterSpacing)
+        }
+        content.addView(label("Colors", 14f, true).apply { setPadding(0, dp(12), 0, dp(2)) })
         val unavailable = ColorValue.Unavailable("Color snapshot unavailable")
         node.colors?.textOrigin?.let { content.addView(label(it, 11f, true)) }
         colorRow("Text color", node.colors?.text ?: unavailable)
         colorRow("Background color", node.colors?.background ?: unavailable)
         colorRow("Border color", node.colors?.border ?: unavailable)
         content.addView(label("Component properties, not composited pixels. Descendant text is labeled. Tap another component to refresh.", 11f))
+    }
+
+    private fun propertyRow(title: String, value: TextPropertyValue) {
+        content.addView(label(title, 12f, true).apply { setPadding(0, dp(8), 0, dp(2)) })
+        content.addView(label(value.displayText(), 13f))
     }
 
     private fun colorRow(title: String, value: ColorValue) {
@@ -146,6 +182,94 @@ internal class ColorDetailsPanel(context: Context) : ScrollView(context) {
     }
 
     private fun dp(value: Int) = (value * resources.displayMetrics.density).roundToInt()
+
+    /** Only the fixed header owns movement; the body keeps native scrolling/copy gestures. */
+    private inner class DragHandle(context: Context) : TextView(context) {
+        private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
+        private var pointerId = MotionEvent.INVALID_POINTER_ID
+        private var downX = 0f
+        private var downY = 0f
+        private var lastX = 0f
+        private var lastY = 0f
+        private var dragging = false
+
+        init {
+            text = "⠿  Properties"
+            textSize = 15f
+            setTypeface(Typeface.DEFAULT, Typeface.BOLD)
+            setTextColor(0xFF25236D.toInt())
+            gravity = Gravity.CENTER_VERTICAL
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            isClickable = true
+            isFocusable = true
+            contentDescription = "Move properties panel"
+        }
+
+        // Convert local pointer coordinates to the panel's parent, not the device display.
+        // This stays stable as the panel moves and works inside inset dialog windows.
+        private fun pointerPosition(event: MotionEvent, index: Int): Pair<Float, Float> {
+            val header = parent as View
+            return Pair(event.getX(index) + x + header.x + this@ColorDetailsPanel.x,
+                event.getY(index) + y + header.y + this@ColorDetailsPanel.y)
+        }
+
+        private fun resetPointer(event: MotionEvent, index: Int) {
+            pointerId = event.getPointerId(index)
+            val (px, py) = pointerPosition(event, index)
+            downX = px; downY = py
+            lastX = px; lastY = py
+        }
+
+        private fun move(event: MotionEvent) {
+            val index = event.findPointerIndex(pointerId)
+            if (index < 0) { cancelGesture(); return }
+            val (px, py) = pointerPosition(event, index)
+            if (!dragging && hypot(px - downX, py - downY) <= touchSlop) return
+            dragging = true
+            onDragBy(px - lastX, py - lastY)
+            lastX = px; lastY = py
+        }
+
+        override fun onTouchEvent(event: MotionEvent): Boolean {
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    dragging = false
+                    resetPointer(event, 0)
+                    parent.requestDisallowInterceptTouchEvent(true)
+                }
+                MotionEvent.ACTION_MOVE -> if (pointerId != MotionEvent.INVALID_POINTER_ID) move(event)
+                MotionEvent.ACTION_POINTER_UP -> if (event.getPointerId(event.actionIndex) == pointerId) {
+                    val next = if (event.actionIndex == 0) 1 else 0
+                    if (next < event.pointerCount) resetPointer(event, next) else cancelGesture()
+                }
+                MotionEvent.ACTION_UP -> {
+                    if (pointerId != MotionEvent.INVALID_POINTER_ID) {
+                        if (dragging) move(event) else performClick()
+                    }
+                    cancelGesture()
+                }
+                MotionEvent.ACTION_CANCEL -> cancelGesture()
+            }
+            return true
+        }
+
+        override fun performClick(): Boolean {
+            super.performClick()
+            return true
+        }
+
+        fun cancelGesture() {
+            pointerId = MotionEvent.INVALID_POINTER_ID
+            dragging = false
+            parent?.requestDisallowInterceptTouchEvent(false)
+        }
+
+        override fun onDetachedFromWindow() {
+            cancelGesture()
+            super.onDetachedFromWindow()
+        }
+    }
 
     private class ColorSwatch(context: Context, private val argb: Int) : View(context) {
         private val paint = Paint()

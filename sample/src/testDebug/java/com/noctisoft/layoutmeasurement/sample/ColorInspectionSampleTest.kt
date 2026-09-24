@@ -79,6 +79,28 @@ class ColorInspectionSampleTest {
         }
     }
 
+    @Test fun `XML properties card demonstrates explicit typography`() {
+        withNodes(MainActivity::class.java) { nodes ->
+            val p = nodes.single { it.label.endsWith("/color_sample") }.textProperties!!
+            assertTrue(p.fontSize.displayText(), p.fontSize.displayText().startsWith("18.0 sp ·"))
+            assertEquals("monospace (system)", p.fontFamily.displayText())
+            assertEquals("700 · Bold", p.fontWeight.displayText())
+            assertEquals("Italic", p.fontStyle.displayText())
+            assertEquals("0.020 em", p.letterSpacing.displayText())
+        }
+    }
+
+    @Test fun `Compose properties card matches the XML typography example`() {
+        withNodes(ComposeActivity::class.java) { nodes ->
+            val p = nodes.single { it.label == "compose_colors" }.textProperties!!
+            assertTrue(p.fontSize.displayText(), p.fontSize.displayText().startsWith("18.0 sp ·"))
+            assertEquals("monospace (configured)", p.fontFamily.displayText())
+            assertEquals("700 · Bold", p.fontWeight.displayText())
+            assertEquals("Italic", p.fontStyle.displayText())
+            assertEquals("0.020 em", p.letterSpacing.displayText())
+        }
+    }
+
     private fun <T : Activity> withNodes(activityClass: Class<T>, check: (List<CapturedNode>) -> Unit) {
         val controller = Robolectric.buildActivity(activityClass).setup().visible()
         try {

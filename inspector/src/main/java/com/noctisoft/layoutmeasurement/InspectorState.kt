@@ -1,6 +1,13 @@
 package com.noctisoft.layoutmeasurement
 
-enum class MeasureMode { SIZE, GAP, RULER, BOUNDS, COLORS }
+enum class MeasureMode {
+    SIZE, GAP, RULER, BOUNDS, COLORS;
+
+    companion object {
+        /** Properties is the UI name; retain the COLORS entry for existing integrations. */
+        @JvmField val PROPERTIES: MeasureMode = COLORS
+    }
+}
 
 enum class FloatingControlState {
     HIDDEN,

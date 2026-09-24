@@ -12,7 +12,8 @@
             android:layout_width="match_parent" android:layout_height="wrap_content"
             android:layout_marginTop="16dp" android:padding="12dp"
             android:background="@drawable/sample_color_surface" android:textColor="#FF25236D"
-            android:text="@string/sheet_xml_colors" />
+            android:text="@string/sheet_xml_colors" android:textSize="18sp"
+            android:fontFamily="monospace" android:textStyle="bold|italic" android:letterSpacing="0.02" />
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:layout_marginTop="16dp" android:orientation="horizontal">
             <TextView android:id="@+id/sheet_box_a"
@@ -28,6 +29,9 @@
         <androidx.compose.ui.platform.ComposeView android:id="@+id/sheet_compose_island"
             android:layout_width="match_parent" android:layout_height="wrap_content"
             android:layout_marginTop="16dp" />
+        <include layout="@layout/view_contained_gap_sample"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="24dp" />
         <Button android:id="@+id/close_xml_bottom_sheet"
             android:layout_width="match_parent" android:layout_height="wrap_content"
             android:layout_marginTop="16dp" android:text="@string/showcase_close_sheet" />

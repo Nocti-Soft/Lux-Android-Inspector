@@ -97,7 +97,7 @@ class ColorInspectionEdgeCaseTest {
         panel.onDismissRequested = { dismissed = true; panel.render(null) }
         panel.render(CapturedNode("Text", Bounds(0, 0, 100, 50), Source.XML,
             ComponentColors(ColorValue.Solid(Color.RED), ColorValue.None, ColorValue.None)))
-        val dismiss = find(panel, "Dismiss color details")
+        val dismiss = find(panel, "Dismiss properties")
         assertNotNull(dismiss)
         dismiss!!.performClick()
         assertTrue(dismissed)
