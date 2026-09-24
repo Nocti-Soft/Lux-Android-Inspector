@@ -27,6 +27,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,6 +57,7 @@ internal fun ComposeSheetShowcase() {
                     Text(stringResource(R.string.sheet_box_b), Modifier.testTag("modal_box_b").width(100.dp).height(48.dp).background(Color(0xFFE4F5E8)).padding(8.dp))
                 }
                 Text(stringResource(R.string.sheet_gap_hint))
+                ContainedGapSample()
                 Button(onClick = { open = false }, modifier = Modifier.testTag("close_compose_sheet")) {
                     Text(stringResource(R.string.showcase_close_sheet))
                 }
@@ -67,5 +73,10 @@ internal fun SheetColorCard(tag: String) {
         modifier = Modifier.testTag(tag).fillMaxWidth()
             .background(Color(0xFFF1EAFE)).border(2.dp, Color(0xFF4F46E5)).padding(12.dp),
         color = Color(0xFF25236D),
+        fontSize = 18.sp,
+        fontFamily = FontFamily.Monospace,
+        fontWeight = FontWeight.Bold,
+        fontStyle = FontStyle.Italic,
+        letterSpacing = 0.02.em,
     )
 }

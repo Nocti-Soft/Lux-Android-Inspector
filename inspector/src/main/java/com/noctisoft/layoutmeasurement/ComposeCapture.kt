@@ -41,6 +41,7 @@ object ComposeCapture {
                         ),
                         source = Source.COMPOSE,
                         colors = if (includeColors) ComposeColorCapture.capture(node) else null,
+                        textProperties = if (includeColors) ComposeTextCapture.capture(node) else null,
                     )
                 )
             }

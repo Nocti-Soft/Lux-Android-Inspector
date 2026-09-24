@@ -27,11 +27,11 @@ class ColorInspectionOverlayTest {
         InspectorController.hideControlsForStartup()
     }
 
-    @Test fun `Colors menu activates color inspection and picking a node reveals codes`() {
+    @Test fun `Properties menu activates color inspection and picking a node reveals codes`() {
         val overlay = fixture()
         InspectorController.revealControls(RevealSource.SHAKE)
         find(overlay, "Layout inspector controls")!!.performClick()
-        find(overlay, "Colors")!!.performClick()
+        find(overlay, "Properties")!!.performClick()
         assertEquals(MeasureMode.COLORS, InspectorController.mode)
         tapCanvas(overlay)
         val panel = children(overlay).filterIsInstance<ColorDetailsPanel>().single()

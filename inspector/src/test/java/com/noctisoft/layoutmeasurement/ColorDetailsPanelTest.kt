@@ -6,6 +6,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ScrollView
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -36,7 +37,7 @@ class ColorDetailsPanelTest {
         assertEquals(View.VISIBLE, panel.visibility)
         panel.render(null)
         assertEquals(View.GONE, panel.visibility)
-        assertEquals(0, (panel.getChildAt(0) as ViewGroup).childCount)
+        assertEquals(0, (scroll(panel).getChildAt(0) as ViewGroup).childCount)
     }
 
     @Test fun `long labels and multiple colors remain within bounded scrollable panel`() {
@@ -47,8 +48,11 @@ class ColorDetailsPanelTest {
         panel.layout(0, 0, panel.measuredWidth, panel.measuredHeight)
         assertTrue(panel.measuredWidth <= 220)
         assertTrue(panel.measuredHeight <= 140)
-        assertTrue(panel.getChildAt(0).height > panel.height)
+        assertTrue(scroll(panel).getChildAt(0).height > scroll(panel).height)
     }
+
+    private fun scroll(panel: ColorDetailsPanel) = (0 until panel.childCount)
+        .map(panel::getChildAt).filterIsInstance<ScrollView>().single()
 
     private fun node(text: ColorValue) = CapturedNode("title", Bounds(10, 10, 160, 60), Source.XML,
         ComponentColors(text, ColorValue.Solid(0), ColorValue.None))

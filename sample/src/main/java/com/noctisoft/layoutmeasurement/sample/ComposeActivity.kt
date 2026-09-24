@@ -17,6 +17,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 
 class ComposeActivity : ComponentActivity() {
@@ -38,12 +43,17 @@ fun ComposeScreen() {
         Spacer(Modifier.height(24.dp))
         // Ordinary styling and a testTag; no inspector-specific color annotation is required.
         Text(
-            "Inspect my colors",
+            "Inspect my properties",
             modifier = Modifier.testTag("compose_colors")
                 .background(Color(0xFFF1EAFE))
                 .border(2.dp, Color(0xFF4F46E5))
                 .padding(12.dp),
             color = Color(0xFF25236D),
+            fontSize = 18.sp,
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold,
+            fontStyle = FontStyle.Italic,
+            letterSpacing = 0.02.em,
         )
         Spacer(Modifier.height(32.dp))
         // Deliberately untagged: must NOT appear as its own node (spec).

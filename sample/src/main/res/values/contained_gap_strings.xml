@@ -1,0 +1,9 @@
+<resources>
+    <string name="contained_gap_showcase">Parent / inner-view gaps</string>
+    <string name="contained_gap_xml_title">XML parent and inner view</string>
+    <string name="contained_gap_compose_title">Compose parent and inner view</string>
+    <string name="contained_gap_instructions">Choose Gap, tap Inner view, then tap the shaded space inside its parent border. Repeat in reverse order. Stop inspection before scrolling.</string>
+    <string name="contained_gap_expected">Expected edge distances: Left 24 dp · Top 32 dp · Right 40 dp · Bottom 48 dp.</string>
+    <string name="contained_gap_inner">Inner view</string>
+    <string name="contained_gap_note">Measurements use the selected bounds, not the declared padding or margin values. Left and right refer to physical screen edges.</string>
+</resources>

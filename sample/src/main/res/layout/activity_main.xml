@@ -32,7 +32,11 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:padding="12dp"
-        android:text="Inspect my colors"
+        android:text="Inspect my properties"
+        android:textSize="18sp"
+        android:fontFamily="monospace"
+        android:textStyle="bold|italic"
+        android:letterSpacing="0.02"
         android:textColor="#FF25236D"
         android:background="@drawable/sample_color_surface" />
 
@@ -59,4 +63,7 @@
     <Button android:id="@+id/open_bottom_sheets"
         android:layout_width="match_parent" android:layout_height="wrap_content"
         android:layout_marginTop="16dp" android:text="@string/bottom_sheet_showcase" />
+    <Button android:id="@+id/open_gap_showcase"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="12dp" android:text="@string/contained_gap_showcase" />
 </LinearLayout>

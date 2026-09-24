@@ -15,6 +15,7 @@ import kotlin.math.roundToInt
 internal class MeasureCanvas(context: Context) : View(context) {
     var onColorNodeSelected: (CapturedNode?) -> Unit = {}
     private val density = resources.displayMetrics.density
+    private val edgeDistanceRenderer = EdgeDistanceRenderer(density)
     private var nodes: List<CapturedNode> = emptyList()
     private var selectedA: CapturedNode? = null
     private var selectedB: CapturedNode? = null
@@ -133,6 +134,16 @@ internal class MeasureCanvas(context: Context) : View(context) {
             drawBounds(canvas, a.bounds, boundsPaint)
             return
         }
+        val measurement = Geometry.measureGap(a.bounds, b.bounds)
+        if (measurement is GapMeasurement.Contained) {
+            edgeDistanceRenderer.draw(canvas, measurement.outer, measurement.inner, measurement.edges, width, height)
+            return
+        }
+        if (measurement == GapMeasurement.SameBounds) {
+            edgeDistanceRenderer.draw(canvas, a.bounds, a.bounds, EdgeDistances(0, 0, 0, 0), width, height)
+            return
+        }
+        if (measurement == GapMeasurement.Invalid) return
         val labels = ArrayList<GapLabel>(2)
         val horizontalGap = Geometry.horizontalGap(a.bounds, b.bounds)
         if (horizontalGap > 0) {
@@ -151,7 +162,8 @@ internal class MeasureCanvas(context: Context) : View(context) {
             labels.add(GapLabel(Geometry.formatPx(verticalGap, density), x + 8, (y1 + y2) / 2))
         }
         if (horizontalGap == 0 && verticalGap == 0) {
-            labels.add(GapLabel("overlapping (gap 0)", a.bounds.left.toFloat(), max(a.bounds.top - 8, 40).toFloat()))
+            val text = if (measurement == GapMeasurement.Touching) "Touching · ${Geometry.formatPx(0, density)}" else "overlapping (gap 0)"
+            labels.add(GapLabel(text, a.bounds.left.toFloat(), max(a.bounds.top - 8, 40).toFloat()))
         }
         SelectionOutlineRenderer.draw(canvas, listOf(a.bounds, b.bounds), density)
         // Labels are the final foreground pass, above border cores and contrast halos.
