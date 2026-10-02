@@ -53,7 +53,7 @@ With your app open, **shake the device** or tap its **Layout Inspector notificat
 | --- | --- |
 | **Size** | Tap a component to read its width and height in dp and px. |
 | **Gap** | Tap two components to measure their separation or inner-to-outer edge distances. |
-| **Properties** | Tap a component to inspect font size, family, weight, style, letter spacing, and text/background/border colors when available. |
+| **Properties** | Tap a component to inspect width and height in dp/px, font size, family, weight, style, letter spacing, and text/background/border colors when available. |
 | **Ruler** | Drag between two points to measure their distance. |
 | **Bounds** | Show component outlines; tap to refresh after a layout change. |
 
@@ -63,7 +63,7 @@ Choose **Stop Inspector** before scrolling, pressing buttons, or interacting wit
 
 ### XML / Android Views
 
-Views need no extra tags or annotations. For example, select **Properties** and tap a `TextView` to inspect its typography and colors, or select **Size** to measure a button.
+Views need no extra tags or annotations. For example, select **Properties** and tap a `TextView` to inspect its dimensions, typography, and colors, or select **Size** to measure a button.
 
 ### Jetpack Compose
 
