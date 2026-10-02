@@ -90,6 +90,10 @@ internal class ColorDetailsPanel(context: Context) : LinearLayout(context) {
             ellipsize = TextUtils.TruncateAt.END
         })
         content.addView(label("${node.source} · ARGB #AARRGGBB · tap a code to copy", 11f))
+        content.addView(label("Size", 14f, true).apply { setPadding(0, dp(12), 0, dp(2)) })
+        val density = resources.displayMetrics.density
+        propertyRow("Width", TextPropertyValue.Known(Geometry.formatPx(node.bounds.width, density)))
+        propertyRow("Height", TextPropertyValue.Known(Geometry.formatPx(node.bounds.height, density)))
         node.textProperties?.let { text ->
             content.addView(label("Text", 14f, true).apply { setPadding(0, dp(12), 0, dp(2)) })
             text.origin?.let { content.addView(label(it, 11f, true)) }
