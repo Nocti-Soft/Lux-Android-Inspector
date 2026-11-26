@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ScrollView
+import android.widget.TextView
 import androidx.core.view.ViewCompat
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -235,6 +236,24 @@ class FloatingInspectorControlTest {
         assertEquals(1, notificationControls)
         button(control, "Back").performClick()
         assertEquals(View.VISIBLE, button(control, "Start Inspector").visibility)
+    }
+
+    @Test
+    fun `settings shows the packaged library version as read only text`() {
+        val control = visibleControl(FloatingControlState.EXPANDED)
+        val version = requireNotNull(System.getProperty("inspector.test.publicationVersion"))
+        fun visibleVersion(): View? = find(control) { view ->
+            view is TextView && view.text.toString() == "Layout Inspector $version" &&
+                generateSequence<View>(view) { it.parent as? View }.all { it.visibility == View.VISIBLE }
+        }
+
+        assertNull(visibleVersion())
+        button(control, "Settings").performClick()
+        val footer = visibleVersion()
+        assertNotNull("Settings must show the packaged inspector version", footer)
+        assertFalse(requireNotNull(footer).isClickable)
+        button(control, "Back").performClick()
+        assertNull(visibleVersion())
     }
 
     @Test
