@@ -22,6 +22,7 @@ android {
 
     defaultConfig {
         minSdk = 24
+        resValue("string", "layout_inspector_version", "Layout Inspector $publicationVersion")
     }
 
     compileOptions {
@@ -35,6 +36,7 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
+        unitTests.all { it.systemProperty("inspector.test.publicationVersion", publicationVersion) }
     }
 
     publishing {

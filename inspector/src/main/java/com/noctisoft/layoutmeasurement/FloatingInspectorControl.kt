@@ -19,6 +19,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.TextView
 import androidx.core.view.ViewCompat
 import kotlin.math.hypot
 import kotlin.math.roundToInt
@@ -354,6 +355,12 @@ internal class FloatingInspectorControl(context: Context) : FrameLayout(context)
             }
             addView(hideButton)
             addView(settingsButton("Notification Controls", R.drawable.ic_inspector_bell) { onNotificationControlsRequested() })
+            addView(TextView(context).apply {
+                setText(R.string.layout_inspector_version)
+                setTextColor(DEEP_INDIGO)
+                textSize = 12f
+                setPadding(dp(16), dp(8), dp(16), dp(4))
+            }, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         }
         addView(mainPanel)
         addView(settingsPanel)

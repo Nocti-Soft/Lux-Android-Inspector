@@ -45,7 +45,9 @@ internal class InspectorWindowSession(private val activity: Activity) {
         if (!running || activity.isDestroyed || activity.isFinishing) return
         val inspecting = InspectorController.isActive || InspectorController.controlState != FloatingControlState.HIDDEN
         val target = if (inspecting) InspectorWindowRoots.topRoot(activity) else activity.window.decorView as? ViewGroup
-        if (target !== host || overlay.parent !== target) {
+        // A view can already have a parent but miss its window attach callback.
+        val needsAttach = target?.isAttachedToWindow == true && !overlay.isAttachedToWindow
+        if (target !== host || overlay.parent !== target || needsAttach) {
             detach()
             if (target != null) {
                 host = target
