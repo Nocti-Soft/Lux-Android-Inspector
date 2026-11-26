@@ -53,6 +53,26 @@ class DialogWindowInspectionTest {
         InspectorController.restorePlacement(FloatingPlacement())
     }
 
+    @Test fun `floating menu opens after the overlay misses its window attach callback`() {
+        val root = activity.window.decorView as ViewGroup
+        val flags = ViewGroup::class.java.getDeclaredField("mGroupFlags").apply { isAccessible = true }
+        val originalFlags = flags.getInt(root)
+        // Simulate a decor that suppresses attachment dispatch while adding the child.
+        val preventAttach = ViewGroup::class.java.getDeclaredField("FLAG_PREVENT_DISPATCH_ATTACHED_TO_WINDOW")
+            .apply { isAccessible = true }.getInt(null)
+        flags.setInt(root, originalFlags or preventAttach)
+        try {
+            InspectorLifecycle.onActivityResumed(activity)
+        } finally {
+            flags.setInt(root, originalFlags)
+        }
+        settle()
+
+        val inspector = requireNotNull(overlay(root))
+        tap(root, requireNotNull(find(inspector, "Layout inspector controls")))
+        assertTrue("Tapping the floating button must show the menu", find(inspector, "Properties")!!.isShown)
+    }
+
     @Test fun `dialog gets the only overlay and actual floating button touches open the menu`() {
         val dialog = showDialog()
         val root = dialog.window!!.decorView as ViewGroup
